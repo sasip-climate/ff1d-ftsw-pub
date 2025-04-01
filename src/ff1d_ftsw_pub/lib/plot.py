@@ -1,12 +1,35 @@
 import abc
+import enum
 import importlib
 import json
 import pathlib
+import tomllib
 
+import attrs
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 
 from .params import GR, WIDTH_TWO_COLUMNS
+
+
+def read_json(handle: pathlib.Path) -> dict:
+    with open(handle) as f:
+        values = json.load(f)
+    return values
+
+
+def read_csv(handle: pathlib.Path):
+    return np.loadtxt(handle, delimiter=",")
+
+
+class FileFormat(enum.Enum):
+    csv = read_csv
+    json = read_json
+    npz = np.load
+
+    def __call__(self, handle: pathlib.Path):
+        return self.value(handle)
 
 
 def set_style():
@@ -17,17 +40,45 @@ def set_style():
     plt.style.use(path_to_style)
 
 
+def load_data(subdir: pathlib.Path):
+    manifest_name = "manifest.toml"
+    with open(subdir.joinpath(manifest_name), "rb") as file:
+        manifest = tomllib.load(file)
+
+    return {
+        pathlib.Path(handle).stem: getattr(FileFormat, file_format)(
+            subdir.joinpath(handle)
+        )
+        for file_format in manifest
+        for handle in manifest[file_format]["files"]
+    }
+
+
+# TODO: actually, maybe want separate classes for reading and plotting? Not sure
+@attrs.frozen
 class AbstractPlotter(abc.ABC):
+    figure_number: int
+    # TODO: attrs' factory to build this field from the previous one, with a
+    # call to importlib
+    data_subdir: pathlib.Path
+
     @abc.abstractmethod
-    def read(self): ...
+    # TODO: load_data can probably live here
+    def data_loader(self): ...
+
+    @abc.abstractmethod
+    def clean_data(self): ...
 
     @abc.abstractmethod
     def plot(self): ...
 
 
-# TODO: attrs! attributes like data_root, figname,...
+# TODO: attrs' attributes like data_root, figname,...
 class Fig04(AbstractPlotter):
-    def read(self):
+    def read(
+        self,
+    ) -> dict[str, npt.ArrayLike | dict[str, npt.ArrayLike]]:
+        # TODO: rewrite to get the filenames out
         root = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(
             "fig04"
         )  # pathlib.Path("../data/fig04")
@@ -62,6 +113,7 @@ class Fig04(AbstractPlotter):
         variables["curvature_thresholds"] = np.abs(variables["curvature_thresholds"])
         return variables
 
+    # TODO: that does not belong in the class
     def make_path(self, output_dir):
         output_dir = pathlib.Path(output_dir)
         if not output_dir.exists():
