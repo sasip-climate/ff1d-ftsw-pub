@@ -1,1 +1,3 @@
 dist/*
+figures/*
+src/ff1d_ftsw_pub/**/__pycache__/

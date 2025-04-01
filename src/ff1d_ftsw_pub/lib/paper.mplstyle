@@ -1,0 +1,25 @@
+# Adapted from seaborn paper context
+figure.figsize: 6.3, 4.4
+figure.dpi: 300
+
+axes.labelsize: 8.8
+axes.titlesize: 9.6
+xtick.labelsize: 8
+ytick.labelsize: 8
+legend.fontsize: 8
+
+grid.linewidth: 0.8
+lines.linewidth: 1.25
+patch.linewidth: 0.24
+lines.markersize: 5.6
+lines.markeredgewidth: 0
+
+xtick.major.width: 0.8
+ytick.major.width: 0.8
+xtick.minor.width: 0.4
+ytick.minor.width: 0.4
+
+xtick.major.pad: 5.6
+ytick.major.pad: 5.6
+
+axes.prop_cycle: cycler("color", ["58A4B0", "F49D6E", "88b076", "564E58", "E7BBE3"])

@@ -1,0 +1,1 @@
+{"gravity": 9.8, "tank": {"depth": 0.11, "density": 1000.0}, "varnish": {"density": 680, "energy_release_rate": 0.17385034449607434, "flexural_length": 0.0074995275441722764, "flexural_rigidity": 3.1e-05, "poissons_ratio": 0.4, "thickness": 0.000158, "frac_toughness": 4049.240922863745, "youngs_modulus": 79222941.79567946}}
