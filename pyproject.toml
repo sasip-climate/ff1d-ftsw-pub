@@ -20,22 +20,22 @@ classifiers = [
 ]
 dependencies = ["numpy", "matplotlib", "polars", "seaborn"]
 
+[project.scripts]
+ftsw-gen = "ff1d_ftsw_pub.ui.cli:main"
+
 [project.urls]
 Documentation = "https://github.com/sasip-climate/ff1d-ftsw-pub#readme"
 Issues = "https://github.com/sasip-climate/ff1d-ftsw-pub/issues"
 Source = "https://github.com/sasip-climate/ff1d-ftsw-pub"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/ff1d"]
-
 [tool.hatch.version]
-path = "src/ff1d/ftsw_pub/__about__.py"
+path = "src/ff1d_ftsw_pub/__about__.py"
 
 [tool.coverage.run]
 branch = true
 source = ["src", "tests"]
 parallel = true
-omit = ["src/ff1d/ftsw_pub/__about__.py"]
+omit = ["src/ff1d_ftsw_pub/__about__.py"]
 
 [tool.coverage.paths]
 tests = ["tests"]
