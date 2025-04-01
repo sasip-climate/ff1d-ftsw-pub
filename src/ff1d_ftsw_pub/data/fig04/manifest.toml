@@ -1,0 +1,13 @@
+[csv]
+files = ["jumps.csv"]
+descriptions = [
+    "Coordinates, in nondim wavenumber units, of transisions between regions",
+]
+
+[json]
+files = ["parameters.json"]
+descriptions = ["Physical parameters of the numerical experiment"]
+
+[npz]
+files = ["results.npz"]
+descriptions = ["Results of the numerical experiment"]
