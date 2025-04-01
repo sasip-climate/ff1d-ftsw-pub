@@ -20,6 +20,7 @@ def set_style():
 class AbstractPlotter(abc.ABC):
     @abc.abstractmethod
     def read(self): ...
+
     @abc.abstractmethod
     def plot(self): ...
 
