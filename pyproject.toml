@@ -31,6 +31,9 @@ Source = "https://github.com/sasip-climate/ff1d-ftsw-pub"
 [tool.hatch.version]
 path = "src/ff1d_ftsw_pub/__about__.py"
 
+[tool.hatch.envs.hatch-test]
+dependencies = ["pytest"]
+
 [tool.coverage.run]
 branch = true
 source = ["src", "tests"]
