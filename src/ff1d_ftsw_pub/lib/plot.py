@@ -24,6 +24,7 @@ class AbstractPlotter(abc.ABC):
     def plot(self): ...
 
 
+# TODO: attrs! attributes like data_root, figname,...
 class Fig04(AbstractPlotter):
     def read(self):
         root = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(
