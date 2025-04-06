@@ -18,7 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = ["numpy", "matplotlib", "polars", "seaborn"]
+dependencies = ["attrs", "numpy", "matplotlib", "polars", "seaborn"]
 
 [project.scripts]
 ftsw-gen = "ff1d_ftsw_pub.ui.cli:main"
