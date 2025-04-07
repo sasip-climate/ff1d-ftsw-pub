@@ -1,26 +1,4 @@
 import enum
-import json
-
-import numpy
-
-
-def read_json(handle: pathlib.Path) -> dict:
-    with open(handle) as f:
-        values = json.load(f)
-    return values
-
-
-def read_csv(handle: pathlib.Path):
-    return np.loadtxt(handle, delimiter=",")
-
-
-class FileFormat(enum.Enum):
-    csv = read_csv
-    json = read_json
-    npz = np.load
-
-    def __call__(self, handle: pathlib.Path):
-        return self.value(handle)
 
 
 class FigureMatcher(enum.Enum):
