@@ -20,6 +20,7 @@ def load_manifest(subdir: importlib.resources.abc.Traversable):
 
 
 def test_total_datasets():
+    """Test there are as many data folders as expected."""
     data_path = importlib.resources.files(data_root)
     sub_folders = list(data_path.iterdir())
     assert len(sub_folders) == nb_figures
@@ -27,11 +28,13 @@ def test_total_datasets():
 
 @pytest.mark.parametrize("subdir", importlib.resources.files(data_root).iterdir())
 def test_all_manifests_exist(subdir: importlib.resources.abc.Traversable):
+    """Test that all data folders have a manifest file."""
     assert get_manifest_handle(subdir).is_file()
 
 
 @pytest.mark.parametrize("subdir", importlib.resources.files(data_root).iterdir())
 def test_all_files_exist(subdir: importlib.resources.abc.Traversable):
+    """Test all files listed in a manifest exist."""
     manifest = load_manifest(subdir)
     for filetype in manifest.values():
         for handle in filetype["files"]:
@@ -40,6 +43,7 @@ def test_all_files_exist(subdir: importlib.resources.abc.Traversable):
 
 @pytest.mark.parametrize("subdir", importlib.resources.files(data_root).iterdir())
 def test_files_are_loaded(subdir: importlib.resources.abc.Traversable):
+    """Test that as many files listed in a manifest are loaded."""
     manifest = load_manifest(subdir)
     data = plot.load_data(subdir)
     n_files = 0
