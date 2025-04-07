@@ -3,7 +3,7 @@ import tomllib
 
 import pytest
 
-import ff1d_ftsw_pub.lib.plot as plot
+import ff1d_ftsw_pub.lib.data as libdata
 
 data_root = "ff1d_ftsw_pub.data"
 nb_figures = 1
@@ -45,7 +45,7 @@ def test_all_files_exist(subdir: importlib.resources.abc.Traversable):
 def test_files_are_loaded(subdir: importlib.resources.abc.Traversable):
     """Test that as many files listed in a manifest are loaded."""
     manifest = load_manifest(subdir)
-    data = plot.load_data(subdir)
+    data = libdata.read_data(subdir)
     n_files = 0
     for file_format in manifest:
         for file in manifest[file_format]["files"]:

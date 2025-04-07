@@ -19,78 +19,67 @@ def set_style():
     plt.style.use(path_to_style)
 
 
-def load_data(subdir: pathlib.Path):
-    manifest_name = "manifest.toml"
-    with open(subdir.joinpath(manifest_name), "rb") as file:
-        manifest = tomllib.load(file)
-
-    return {
-        pathlib.Path(handle).stem: getattr(FileFormat, file_format)(
-            subdir.joinpath(handle)
-        )
-        for file_format in manifest
-        for handle in manifest[file_format]["files"]
-    }
-
-
 # TODO: actually, maybe want separate classes for reading and plotting? Not sure
 @attrs.frozen
 class AbstractPlotter(abc.ABC):
     figure_number: int
-    # TODO: attrs' factory to build this field from the previous one, with a
-    # call to importlib
-    data_subdir: pathlib.Path
+    size: tuple[float]
+    name: str
+    data_dir: pathlib.Path
+    dir_to_save: pathlib.Path
 
-    @abc.abstractmethod
-    # TODO: load_data can probably live here
-    def data_loader(self): ...
-
-    @abc.abstractmethod
-    def clean_data(self): ...
+    def __attrs_post_init__(self):
+        self.name = f"fig{figure_number:02d}.pdf"
 
     @abc.abstractmethod
     def plot(self): ...
 
+    def _make_filename_handle(self): ...
+
+    def _make_save_path(self): ...
+
+    def _save(self): ...
+
 
 # TODO: attrs' attributes like data_root, figname,...
 class Fig04(AbstractPlotter):
-    def read(
-        self,
-    ) -> dict[str, npt.ArrayLike | dict[str, npt.ArrayLike]]:
-        # TODO: rewrite to get the filenames out
-        root = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(
-            "fig04"
-        )  # pathlib.Path("../data/fig04")
-        parameters_file = "reference_experiment_parameters.json"
-        with open(root / parameters_file) as f:
-            parameters = json.load(f)
-        results_file = "stationnary_simple_comparison.npz"
-        results = np.load(root / results_file)
-        jumps_file = "jumps.csv"
-        jumps = np.loadtxt(root / jumps_file, delimiter=",")
+    # def read(
+    #     self,
+    # ) -> dict[str, npt.ArrayLike | dict[str, npt.ArrayLike]]:
+    #     # TODO: rewrite to get the filenames out
+    #     root = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(
+    #         "fig04"
+    #     )  # pathlib.Path("../data/fig04")
+    #     parameters_file = "reference_experiment_parameters.json"
+    #     with open(root / parameters_file) as f:
+    #         parameters = json.load(f)
+    #     results_file = "stationnary_simple_comparison.npz"
+    #     results = np.load(root / results_file)
+    #     jumps_file = "jumps.csv"
+    #     jumps = np.loadtxt(root / jumps_file, delimiter=",")
 
-        nondim = parameters["varnish"]["flexural_length"] * results["wavenumbers"]
-        variables = {"nondim": nondim, "jumps": jumps} | {
-            k: results[k]
-            for k in (
-                "relaxation_lengths",
-                "amplitude_thresholds",
-                "curvature_thresholds",
-                "normalised_fractures",
-            )
-        }
-        return variables
+    #     nondim = parameters["varnish"]["flexural_length"] * results["wavenumbers"]
+    #     variables = {"nondim": nondim, "jumps": jumps} | {
+    #         k: results[k]
+    #         for k in (
+    #             "relaxation_lengths",
+    #             "amplitude_thresholds",
+    #             "curvature_thresholds",
+    #             "normalised_fractures",
+    #         )
+    #     }
+    #     return variables
 
-    def clean_fracture_locations(self, variables):
-        _y = variables["normalised_fractures"]
-        _m = _y > 0.5
-        _y[_m] = 1 - _y[_m]
-        variables["normalised_fractures"] = _y
-        return variables
+    # def clean_fracture_locations(self, variables):
+    #     _y = variables["normalised_fractures"]
+    #     _m = _y > 0.5
+    #     _y[_m] = 1 - _y[_m]
+    #     variables["normalised_fractures"] = _y
+    #     return variables
 
-    def clean_curvature(self, variables):
-        variables["curvature_thresholds"] = np.abs(variables["curvature_thresholds"])
-        return variables
+    # def clean_curvature(self, variables):
+    #     variables["curvature_thresholds"] = np.abs(variables["curvature_thresholds"])
+    #     return variables
 
     # TODO: that does not belong in the class
     def make_path(self, output_dir):
