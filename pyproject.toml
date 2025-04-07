@@ -32,7 +32,10 @@ Source = "https://github.com/sasip-climate/ff1d-ftsw-pub"
 path = "src/ff1d_ftsw_pub/__about__.py"
 
 [tool.hatch.envs.hatch-test]
-dependencies = ["pytest"]
+dependencies = ["pytest", "coverage"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.12", "3.11"]
 
 [tool.coverage.run]
 branch = true

@@ -2,3 +2,4 @@ dist/*
 figures/*
 src/ff1d_ftsw_pub/**/__pycache__/
 tests/__pycache__/*
+.coverage
