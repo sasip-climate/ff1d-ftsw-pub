@@ -79,11 +79,9 @@ class SimpleExampleLoader(Loader):
 
     @staticmethod
     def _clean_curvature(critical_curvatures: np.ndarray) -> np.ndarray:
-        return np.abs(variables["curvature_thresholds"])
+        return np.abs(critical_curvatures)
 
     def clean(cls, variables: dict) -> dict:
-        # TODO: check that modifying the passed arrays in-place should modify
-        # their references as well?
         variables["normalised_fractures"] = cls._clean_fracture_locations(
             variables["normalised_fractures"]
         )

@@ -1,6 +1,9 @@
 import importlib
 import tomllib
 
+from hypothesis import given, strategies as st
+import hypothesis.extra.numpy as npst
+import numpy as np
 import pytest
 
 import ff1d_ftsw_pub.lib.data as libdata
@@ -51,3 +54,28 @@ def test_files_are_loaded(subdir: importlib.resources.abc.Traversable):
         for file in manifest[file_format]["files"]:
             n_files += 1
     assert n_files == len(data)
+
+
+class TestSimpleExample:
+    @given(npst.arrays(float, st.integers(1, 10)))
+    def test_clean_curvature(self, critical_curvatures):
+        critical_curvatures = libdata.SimpleExampleLoader._clean_curvature(
+            critical_curvatures
+        )
+        assert np.all((critical_curvatures >= 0) | np.isnan(critical_curvatures))
+
+    @given(
+        npst.arrays(
+            float,
+            st.integers(1, 10),
+            elements=st.floats(0, 1, exclude_min=True, exclude_max=True),
+        )
+    )
+    def test_clean_fracture_loc(self, fracture_locations):
+        fracture_locations = libdata.SimpleExampleLoader._clean_fracture_locations(
+            fracture_locations
+        )
+        assert np.all(
+            (fracture_locations > 0) & (fracture_locations <= 0.5)
+            | np.isnan(fracture_locations)
+        )
