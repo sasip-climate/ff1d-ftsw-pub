@@ -2,13 +2,18 @@ import abc
 import importlib
 import pathlib
 import tomllib
+import typing
 
 import attrs
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 
+from .data import Loader, SimpleExampleLoader
 from .params import GR, WIDTH_TWO_COLUMNS
+from .utils import FigureMatcher
 
 
 def set_style():
@@ -19,20 +24,49 @@ def set_style():
     plt.style.use(path_to_style)
 
 
-# TODO: actually, maybe want separate classes for reading and plotting? Not sure
-@attrs.frozen
+@attrs.define
 class AbstractPlotter(abc.ABC):
+    # label: typing.ClassVar[str]
     figure_number: int
+    data: Loader
     size: tuple[float]
-    name: str
-    data_dir: pathlib.Path
-    dir_to_save: pathlib.Path
+    figure: Figure = attrs.field(init=False)
+    axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
 
     def __attrs_post_init__(self):
-        self.name = f"fig{figure_number:02d}.pdf"
+        # self.name = f"fig{figure_number:02d}.pdf"
+        self.figure, self.axes = self._init_figure()
+
+    @classmethod
+    def from_label(cls, label: str, **kwargs) -> typing.Self:
+        data_interface = Loader.from_label(label)
+        number = getattr(FigureMatcher, label.upper())
+        if label == "simple_example":
+            size = WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481
+            return SimpleExamplePlotter(number, data_interface, size, **kwargs)
+        else:
+            raise NotImplementedError
+
+    def plot(self):
+        self._plot()
+        self._plot_accessories()
+        self._label()
+        self._finalise()
 
     @abc.abstractmethod
-    def plot(self): ...
+    def _init_figure(self): ...
+
+    @abc.abstractmethod
+    def _plot(self): ...
+
+    @abc.abstractmethod
+    def _plot_accessories(self): ...
+
+    @abc.abstractmethod
+    def _label(self): ...
+
+    @abc.abstractmethod
+    def _finalise(self): ...
 
     def _make_filename_handle(self): ...
 
@@ -41,46 +75,7 @@ class AbstractPlotter(abc.ABC):
     def _save(self): ...
 
 
-# TODO: attrs' attributes like data_root, figname,...
-class Fig04(AbstractPlotter):
-    # def read(
-    #     self,
-    # ) -> dict[str, npt.ArrayLike | dict[str, npt.ArrayLike]]:
-    #     # TODO: rewrite to get the filenames out
-    #     root = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(
-    #         "fig04"
-    #     )  # pathlib.Path("../data/fig04")
-    #     parameters_file = "reference_experiment_parameters.json"
-    #     with open(root / parameters_file) as f:
-    #         parameters = json.load(f)
-    #     results_file = "stationnary_simple_comparison.npz"
-    #     results = np.load(root / results_file)
-    #     jumps_file = "jumps.csv"
-    #     jumps = np.loadtxt(root / jumps_file, delimiter=",")
-
-    #     nondim = parameters["varnish"]["flexural_length"] * results["wavenumbers"]
-    #     variables = {"nondim": nondim, "jumps": jumps} | {
-    #         k: results[k]
-    #         for k in (
-    #             "relaxation_lengths",
-    #             "amplitude_thresholds",
-    #             "curvature_thresholds",
-    #             "normalised_fractures",
-    #         )
-    #     }
-    #     return variables
-
-    # def clean_fracture_locations(self, variables):
-    #     _y = variables["normalised_fractures"]
-    #     _m = _y > 0.5
-    #     _y[_m] = 1 - _y[_m]
-    #     variables["normalised_fractures"] = _y
-    #     return variables
-
-    # def clean_curvature(self, variables):
-    #     variables["curvature_thresholds"] = np.abs(variables["curvature_thresholds"])
-    #     return variables
-
+class SimpleExamplePlotter(AbstractPlotter):
     # TODO: that does not belong in the class
     def make_path(self, output_dir):
         output_dir = pathlib.Path(output_dir)
@@ -88,10 +83,92 @@ class Fig04(AbstractPlotter):
             output_dir.mkdir(parents=True)
         return output_dir
 
-    def make_triangle_coordinates(self, nondim, jumps, amplitudes, ratio=3):
+    def plot_accessories():
+        self.add_triangle()
+        self.plot_fracture_loc()
+
+    # def plot_fracture_loc(self, ax, jumps, nondim, fracture_location, lw):
+    #     bounds = 0, *jumps, np.inf
+    #     for lb, ub in zip(bounds[:-1], bounds[1:]):
+    #         mask = (nondim >= lb) & (nondim < ub)
+    #         ax.semilogx(nondim[mask], fracture_location[mask], "C3", lw=lw)
+    #     ax.set_ylabel("Fracture location")
+
+    #     horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
+    #     for val in horizontal_asymptotes:
+    #         ax.axhline(val, c="k", lw=lw / 3, ls="--")
+
+    # def plot_others(self, ax, jumps, nondim, variable, ylabel, lw):
+    #     ax.semilogx(nondim, variable, "C3", lw=lw)
+    #     ax.set_ylabel(ylabel)
+    #     for jump in jumps:
+    #         ax.axvline(jump, c="k", lw=lw / 3)
+
+    def _init_figure(self):
+        fig, axes = plt.subplots(4, figsize=self.size, sharex=True)
+        return fig, axes
+
+    def _label(self):
+        ylabels = (
+            "Fracture location",
+            "Crit. amplitude (m)",
+            "Crit. curvature (m$^{-1}$)",
+            "Relaxation length (m)",
+        )
+        for ax, label in zip(self.axes, ylabels):
+            ax.set_ylabel(label)
+        self.axes[-1].set_xlabel("$k L_D$")
+
+    def _plot(self):
+        lw = plt.rcParams["lines.linewidth"]
+        self._plot_fracture_loc()
+        self._plot_others()
+
+    def _plot_fracture_loc(self):
+        ax = self.axes[0]
+        nondim = self.data.nondim
+        bounds = 0, *self.data.jumps, np.inf
+        for lb, ub in zip(bounds[:-1], bounds[1:]):
+            mask = (nondim >= lb) & (nondim < ub)
+            ax.semilogx(
+                nondim[mask],
+                self.data.variables["normalised_fractures"][mask],
+                "C3",
+            )
+        ax.set_ylabel("Fracture location")
+
+    def _plot_others(self):
+        for ax, variable_key in zip(
+            self.axes[1:],
+            (
+                "amplitude_thresholds",
+                "curvature_thresholds",
+                "relaxation_lengths",
+            ),
+        ):
+            ax.semilogx(self.data.nondim, self.data.variables[variable_key], "C3")
+
+    def _plot_accessories(self):
+        self._plot_fracture_loc_asymptotes()
+        self._add_triangle(ratio=3)
+        self._add_jumps()
+
+    def _plot_fracture_loc_asymptotes(self):
+        lw = plt.rcParams["lines.linewidth"] / 3
+        horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
+        ax = self.axes[0]
+        for val in horizontal_asymptotes:
+            ax.axhline(val, c="k", lw=lw, ls="--")
+
+    def _make_triangle_coordinates(self, ratio):
         # `ratio` gives how many centred triangles would fit, in logspace,
         # between the two jumps.
         slope = -2
+        nondim, jumps, amplitudes = (
+            self.data.nondim,
+            self.data.jumps,
+            self.data.variables["amplitude_thresholds"],
+        )
         jump_idx = np.argmin(np.abs(nondim - jumps[1]))
         # Triangle in region 2, between jumps[0] and jumps[1]. We align the
         # base with the intersection of jumps[1] and the critical amplitude
@@ -117,12 +194,11 @@ class Fig04(AbstractPlotter):
             )
         )
 
-    def add_triangle(self, ax, variables):
-        lw = 1
+    def _add_triangle(self, ratio):
+        lw = plt.rcParams["lines.linewidth"] * 2 / 3
+        ax = self.axes[1]
         fontsize = "xx-small"
-        triangle_coordinates = self.make_triangle_coordinates(
-            variables["nondim"], variables["jumps"], variables["amplitude_thresholds"]
-        )
+        triangle_coordinates = self._make_triangle_coordinates(ratio)
         ax.add_patch(
             plt.Polygon(
                 triangle_coordinates,
@@ -148,70 +224,25 @@ class Fig04(AbstractPlotter):
             fontsize=fontsize,
         )
 
-    def plot_fracture_loc(self, ax, jumps, nondim, fracture_location, lw):
-        bounds = 0, *jumps, np.inf
-        for lb, ub in zip(bounds[:-1], bounds[1:]):
-            mask = (nondim >= lb) & (nondim < ub)
-            ax.semilogx(nondim[mask], fracture_location[mask], "C3", lw=lw)
-        ax.set_ylabel("Fracture location")
+    def _add_jumps(self):
+        lw = plt.rcParams["lines.linewidth"] / 3
+        for ax in self.axes[1:]:
+            for jump in self.data.jumps:
+                ax.axvline(jump, c="k", lw=lw)
 
-        horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
-        for val in horizontal_asymptotes:
-            ax.axhline(val, c="k", lw=lw / 3, ls="--")
-
-    def plot_others(self, ax, jumps, nondim, variable, ylabel, lw):
-        ax.semilogx(nondim, variable, "C3", lw=lw)
-        ax.set_ylabel(ylabel)
-        for jump in jumps:
-            ax.axvline(jump, c="k", lw=lw / 3)
-
-    def plot(self):
-        lw = 1
-        width = WIDTH_TWO_COLUMNS
-        height = width / GR * 3.481
-        variables = self.clean_fracture_locations(self.read())
-        variables = self.clean_curvature(variables)
-
-        fig, axes = plt.subplots(4, dpi=300, figsize=(width, height), sharex=True)
-        self.plot_fracture_loc(
-            axes[0],
-            variables["jumps"],
-            variables["nondim"],
-            variables["normalised_fractures"],
-            lw,
-        )
-        ylabels = (
-            "Crit. amplitude (m)",
-            "Crit. curvature (m$^{-1}$)",
-            "Relaxation length (m)",
-        )
-        for ax, variable, ylabel in zip(
-            axes[1:],
-            (
-                variables["amplitude_thresholds"],
-                variables["curvature_thresholds"],
-                variables["relaxation_lengths"],
-            ),
-            ylabels,
-        ):
-            self.plot_others(
-                ax, variables["jumps"], variables["nondim"], variable, ylabel, lw
-            )
-        self.add_triangle(axes[1], variables)
-
-        axes[1].set_yscale("log")
-        axes[-1].set_xlabel("$k L_D$")
-        axes[-1].set_xlim(0.1, 2.5)
-
-        fig.tight_layout()
-        # print([ax.bbox.width / ax.bbox.height for ax in axes])
-        return fig
+    def _finalise(self):
+        self.axes[1].set_yscale("log")
+        self.axes[-1].set_xlim(0.1, 2.5)
+        self.figure.tight_layout()
 
     def save(self, output_dir):
         fig_name = "fig04.pdf"
         output_dir = self.make_path(output_dir)
-        fig = self.plot()
-        fig.savefig(output_dir / fig_name, bbox_inches="tight")
+        self.figure.savefig(output_dir / fig_name, bbox_inches="tight")
+        plt.close()
+
+    def __call__(self):
+        return self.plot()
 
 
 def plot(data_path, plotter): ...

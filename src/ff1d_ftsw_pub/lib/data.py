@@ -1,5 +1,6 @@
 import abc
 import enum
+import importlib
 import json
 import pathlib
 import tomllib
@@ -43,12 +44,18 @@ class FileFormat(enum.Enum):
         return self.value(handle)
 
 
-@attrs.frozen
 class Loader(abc.ABC):
     @abc.abstractclassmethod
     def from_raw_data(cls, raw_data: dict): ...
 
+    @classmethod
+    def from_label(cls, label) -> Self:
+        subdir = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(label)
+        if label == "simple_example":
+            return SimpleExampleLoader.from_raw_data(read_data(subdir))
 
+
+@attrs.frozen
 class SimpleExampleLoader(Loader):
     nondim: np.array
     jumps: np.array
@@ -69,7 +76,7 @@ class SimpleExampleLoader(Loader):
                 "normalised_fractures",
             )
         }
-        return nondim, jumps, variables
+        return nondim, raw_data["jumps"], variables
 
     @staticmethod
     def _clean_fracture_locations(fracture_locations: np.ndarray) -> np.ndarray:
@@ -81,6 +88,7 @@ class SimpleExampleLoader(Loader):
     def _clean_curvature(critical_curvatures: np.ndarray) -> np.ndarray:
         return np.abs(critical_curvatures)
 
+    @classmethod
     def clean(cls, variables: dict) -> dict:
         variables["normalised_fractures"] = cls._clean_fracture_locations(
             variables["normalised_fractures"]
@@ -90,7 +98,8 @@ class SimpleExampleLoader(Loader):
         )
         return variables
 
+    @classmethod
     def from_raw_data(cls, raw_data) -> Self:
         nondim, jumps, variables = cls.extract(raw_data)
         variables = cls.clean(variables)
-        return SimpleExampleLoader(nondim, jumps, variables)
+        return cls(nondim, jumps, variables)

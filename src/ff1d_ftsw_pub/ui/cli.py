@@ -1,6 +1,7 @@
 import argparse
 
-from ..lib import plot
+from ..lib import data as libdata, plot
+from ..lib.utils import FigureMatcher
 
 
 def main():
@@ -8,7 +9,10 @@ def main():
         description="Generate figures for the publication."
     )
     parser.add_argument(
-        "figure_number", type=int, help="Number of the figure to generate."
+        "figure_number",
+        type=int,
+        choices=[e.value for e in FigureMatcher],
+        help="Number of the figure to generate.",
     )
     parser.add_argument(
         "--output",
@@ -19,9 +23,15 @@ def main():
 
     args = parser.parse_args()
     plot.set_style()
-    if args.figure_number == 4:
-        plotter = plot.Fig04()
-        plotter.save(args.output)
+    label = FigureMatcher(args.figure_number).name.lower()
+    # data_interface = libdata.Loader.from_label(label)
+    plotter = plot.AbstractPlotter.from_label(label)
+    # plotter = plot.Plotter.from
+    # if label == "simple_example":
+    #     # data_interface = libdata.SimpleExampleLoader.from_raw_data()
+    #     plotter = plot.SimpleExamplePlotter(data=data_interface)
+    plotter.plot()
+    plotter.save(args.output)
 
 
 if __name__ == "__main__":
