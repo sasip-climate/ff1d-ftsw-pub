@@ -56,6 +56,8 @@ class Loader(abc.ABC):
         subdir = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(label)
         if label == "simple_example":
             return SimpleExampleLoader.from_raw_data(read_data(subdir))
+            else:
+                raise NotImplementedError
 
 
 @attrs.frozen
