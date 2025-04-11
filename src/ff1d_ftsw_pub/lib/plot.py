@@ -52,7 +52,7 @@ class AbstractPlotter(abc.ABC):
         else:
             raise NotImplementedError
 
-    def plot(self):
+    def _plot_wrapper(self):
         self._plot()
         self._plot_accessories()
         self._label()
@@ -73,11 +73,17 @@ class AbstractPlotter(abc.ABC):
     @abc.abstractmethod
     def _finalise(self): ...
 
-    def _make_filename_handle(self): ...
+    def _save(self, output_dir: pathlib.Path):
+        self.figure.savefig(
+            output_dir.joinpath(self.filename_handle),
+            dpi=self.figure.dpi,
+            bbox_inches="tight",
+        )
 
-    def _make_save_path(self): ...
-
-    def _save(self): ...
+    def make_and_write(self, output_dir):
+        self._plot_wrapper()
+        self._save(output_dir)
+        plt.close(self.figure)
 
 
 class SimpleExamplePlotter(AbstractPlotter):
@@ -102,7 +108,6 @@ class SimpleExamplePlotter(AbstractPlotter):
         self.axes[-1].set_xlabel("$k L_D$")
 
     def _plot(self):
-        lw = plt.rcParams["lines.linewidth"]
         self._plot_fracture_loc()
         self._plot_others()
 
@@ -217,14 +222,8 @@ class SimpleExamplePlotter(AbstractPlotter):
         self.axes[-1].set_xlim(0.1, 2.5)
         self.figure.tight_layout()
 
-    def save(self, output_dir):
-        fig_name = "fig04.pdf"
-        output_dir = self.make_path(output_dir)
-        self.figure.savefig(output_dir / fig_name, bbox_inches="tight")
-        plt.close()
-
     def __call__(self):
-        return self.plot()
+        return self._plot_wrapper()
 
 
 def plot(data_path, plotter): ...

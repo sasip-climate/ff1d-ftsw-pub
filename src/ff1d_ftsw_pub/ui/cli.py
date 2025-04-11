@@ -37,8 +37,9 @@ def main():
     # if label == "simple_example":
     #     # data_interface = libdata.SimpleExampleLoader.from_raw_data()
     #     plotter = plot.SimpleExamplePlotter(data=data_interface)
-    plotter.plot()
-    plotter.save(args.output)
+    output_dir = pathlib.Path(args.output)
+    ensure_output_path_exists(output_dir)
+    plotter.make_and_write(output_dir)
 
 
 if __name__ == "__main__":
