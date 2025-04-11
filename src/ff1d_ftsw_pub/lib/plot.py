@@ -31,7 +31,7 @@ class AbstractPlotter(abc.ABC):
     # label: typing.ClassVar[str]
     figure_number: int
     data: Loader
-    size: tuple[float]
+    size: tuple[float, float]
     figure: Figure = attrs.field(init=False)
     axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
 
@@ -43,7 +43,7 @@ class AbstractPlotter(abc.ABC):
         return f"fig{self.figure_number:02d}.pdf"
 
     @classmethod
-    def from_label(cls, label: str, **kwargs) -> typing.Self:
+    def from_label(cls, label: str, **kwargs) -> AbstractPlotter:
         data_interface = Loader.from_label(label)
         number = getattr(FigureMatcher, label.upper())
         if label == "simple_example":
