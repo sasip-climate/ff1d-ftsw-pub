@@ -82,6 +82,11 @@ class AbstractPlotter(abc.ABC):
 
 class SimpleExamplePlotter(AbstractPlotter):
     def _init_figure(self):
+        # TODO: might want looking into not using pyplot, that is
+        # ```
+        # fig = Figure()
+        # axes = fig.subplots()
+        # ```
         fig, axes = plt.subplots(4, figsize=self.size, sharex=True)
         return fig, axes
 
