@@ -45,7 +45,7 @@ class FileFormat(enum.Enum):
 
 
 class Loader(abc.ABC):
-    @abc.classmethod
+    @classmethod
     @abc.abstractmethod
     def from_raw_data(cls, raw_data: dict): ...
 
@@ -58,8 +58,8 @@ class Loader(abc.ABC):
 
 @attrs.frozen
 class SimpleExampleLoader(Loader):
-    nondim: np.array
-    jumps: np.array
+    nondim: np.ndarray
+    jumps: np.ndarray
     variables: dict
 
     @classmethod
