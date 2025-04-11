@@ -4,6 +4,12 @@ from ..lib import data as libdata, plot
 from ..lib.utils import FigureMatcher
 
 
+def ensure_output_path_exists(output_dir: pathlib.Path):
+    output_dir = pathlib.Path(output_dir)
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate figures for the publication."
