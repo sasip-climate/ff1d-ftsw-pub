@@ -54,8 +54,9 @@ class Loader(abc.ABC):
     @classmethod
     def from_label(cls, label) -> Loader:
         subdir = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(label)
-        if label == "simple_example":
-            return SimpleExampleLoader.from_raw_data(read_data(subdir))
+        with importlib.resources.as_file(subdir) as physical_subdir:
+            if label == "simple_example":
+                return SimpleExampleLoader.from_raw_data(read_data(physical_subdir))
             else:
                 raise NotImplementedError
 
