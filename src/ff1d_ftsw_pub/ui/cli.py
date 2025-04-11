@@ -1,6 +1,7 @@
 import argparse
+import pathlib
 
-from ..lib import data as libdata, plot
+from ..lib import plot
 from ..lib.utils import FigureMatcher
 
 

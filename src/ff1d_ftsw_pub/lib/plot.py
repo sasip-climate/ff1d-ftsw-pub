@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 import importlib
 import pathlib
-import tomllib
 import typing
 
 import attrs
@@ -11,11 +10,12 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 
-from .data import Loader, SimpleExampleLoader
+from .data import Loader
 from .params import GR, WIDTH_TWO_COLUMNS
 from .utils import FigureMatcher
+
+# import numpy.typing as npt
 
 
 def set_style():
