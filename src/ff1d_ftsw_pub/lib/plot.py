@@ -36,8 +36,11 @@ class AbstractPlotter(abc.ABC):
     axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
 
     def __attrs_post_init__(self):
-        # self.name = f"fig{figure_number:02d}.pdf"
         self.figure, self.axes = self._init_figure()
+
+    @property
+    def filename_handle(self):
+        return f"fig{self.figure_number:02d}.pdf"
 
     @classmethod
     def from_label(cls, label: str, **kwargs) -> typing.Self:
