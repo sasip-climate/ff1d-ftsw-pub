@@ -45,7 +45,7 @@ class AbstractPlotter(abc.ABC):
     @classmethod
     def from_label(cls, label: str, **kwargs) -> AbstractPlotter:
         data_interface = Loader.from_label(label)
-        number = getattr(FigureMatcher, label.upper())
+        number = getattr(FigureMatcher, label.upper()).value
         if label == "simple_example":
             size = WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481
             return SimpleExamplePlotter(number, data_interface, size, **kwargs)
