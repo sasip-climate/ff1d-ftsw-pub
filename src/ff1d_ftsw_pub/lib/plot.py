@@ -81,34 +81,6 @@ class AbstractPlotter(abc.ABC):
 
 
 class SimpleExamplePlotter(AbstractPlotter):
-    # TODO: that does not belong in the class
-    def make_path(self, output_dir):
-        output_dir = pathlib.Path(output_dir)
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True)
-        return output_dir
-
-    def plot_accessories():
-        self.add_triangle()
-        self.plot_fracture_loc()
-
-    # def plot_fracture_loc(self, ax, jumps, nondim, fracture_location, lw):
-    #     bounds = 0, *jumps, np.inf
-    #     for lb, ub in zip(bounds[:-1], bounds[1:]):
-    #         mask = (nondim >= lb) & (nondim < ub)
-    #         ax.semilogx(nondim[mask], fracture_location[mask], "C3", lw=lw)
-    #     ax.set_ylabel("Fracture location")
-
-    #     horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
-    #     for val in horizontal_asymptotes:
-    #         ax.axhline(val, c="k", lw=lw / 3, ls="--")
-
-    # def plot_others(self, ax, jumps, nondim, variable, ylabel, lw):
-    #     ax.semilogx(nondim, variable, "C3", lw=lw)
-    #     ax.set_ylabel(ylabel)
-    #     for jump in jumps:
-    #         ax.axvline(jump, c="k", lw=lw / 3)
-
     def _init_figure(self):
         fig, axes = plt.subplots(4, figsize=self.size, sharex=True)
         return fig, axes
