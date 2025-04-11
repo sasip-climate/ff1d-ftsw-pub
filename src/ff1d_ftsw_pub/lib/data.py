@@ -45,7 +45,8 @@ class FileFormat(enum.Enum):
 
 
 class Loader(abc.ABC):
-    @abc.abstractclassmethod
+    @abc.classmethod
+    @abc.abstractmethod
     def from_raw_data(cls, raw_data: dict): ...
 
     @classmethod
