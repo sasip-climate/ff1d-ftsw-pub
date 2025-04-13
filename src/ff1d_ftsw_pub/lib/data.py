@@ -112,8 +112,13 @@ class SimpleExampleLoader(Loader):
         )
         return variables
 
+
+@attrs.frozen
+class JointDensityLoader(Loader):
+    thicknesses: np.ndarray
+    youngs_moduli: np.ndarray
+
     @classmethod
     def from_raw_data(cls, raw_data) -> Self:
-        nondim, jumps, variables = cls.extract(raw_data)
-        variables = cls.clean(variables)
-        return cls(nondim, jumps, variables)
+        _h, _Y = (raw_data[k] for k in ("thicknesses", "youngs_moduli"))
+        return cls(_h, _Y)

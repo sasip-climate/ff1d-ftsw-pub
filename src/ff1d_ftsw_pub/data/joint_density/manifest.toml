@@ -1,0 +1,3 @@
+[npz]
+files = ["thickness_modulus_ensemble.npz"]
+descriptions = ["Ensemble of random thicknesses and Young's moduli"]
