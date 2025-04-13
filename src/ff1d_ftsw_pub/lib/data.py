@@ -67,8 +67,8 @@ class SimpleExampleLoader(Loader):
     jumps: np.ndarray
     variables: dict
 
-    @classmethod
-    def extract(cls, raw_data):
+    @staticmethod
+    def _extract(raw_data):
         nondim = (
             raw_data["parameters"]["varnish"]["flexural_length"]
             * raw_data["results"]["wavenumbers"]
@@ -94,12 +94,14 @@ class SimpleExampleLoader(Loader):
     def _clean_curvature(critical_curvatures: np.ndarray) -> np.ndarray:
         return np.abs(critical_curvatures)
 
-    @classmethod
-    def clean(cls, variables: dict) -> dict:
-        variables["normalised_fractures"] = cls._clean_fracture_locations(
-            variables["normalised_fractures"]
+    @staticmethod
+    def _clean(variables: dict) -> dict:
+        variables["normalised_fractures"] = (
+            SimpleExampleLoader._clean_fracture_locations(
+                variables["normalised_fractures"]
+            )
         )
-        variables["curvature_thresholds"] = cls._clean_curvature(
+        variables["curvature_thresholds"] = SimpleExampleLoader._clean_curvature(
             variables["curvature_thresholds"]
         )
         return variables
