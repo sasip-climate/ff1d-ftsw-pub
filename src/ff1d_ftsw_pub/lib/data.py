@@ -72,6 +72,7 @@ class SimpleExampleLoader(Loader):
         nondim, jumps, variables = cls._extract(raw_data)
         variables = cls._clean(variables)
         return cls(nondim, jumps, variables)
+
     @staticmethod
     def _extract(raw_data):
         nondim = (
