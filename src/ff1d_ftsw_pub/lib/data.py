@@ -120,5 +120,6 @@ class JointDensityLoader(Loader):
 
     @classmethod
     def from_raw_data(cls, raw_data) -> Self:
+        raw_data = next(iter(raw_data.values()))
         _h, _Y = (raw_data[k] for k in ("thicknesses", "youngs_moduli"))
         return cls(_h, _Y)
