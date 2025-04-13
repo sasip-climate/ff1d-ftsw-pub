@@ -57,6 +57,9 @@ class Loader(abc.ABC):
         with importlib.resources.as_file(subdir) as physical_subdir:
             if label == "simple_example":
                 return SimpleExampleLoader.from_raw_data(read_data(physical_subdir))
+            # TODO: reformat that bit, too much repetition
+            elif label == "joint_density":
+                return JointDensityLoader.from_raw_data(read_data(physical_subdir))
             else:
                 raise NotImplementedError
 
