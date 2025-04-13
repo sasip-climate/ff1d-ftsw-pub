@@ -67,6 +67,11 @@ class SimpleExampleLoader(Loader):
     jumps: np.ndarray
     variables: dict
 
+    @classmethod
+    def from_raw_data(cls, raw_data) -> Self:
+        nondim, jumps, variables = cls._extract(raw_data)
+        variables = cls._clean(variables)
+        return cls(nondim, jumps, variables)
     @staticmethod
     def _extract(raw_data):
         nondim = (
