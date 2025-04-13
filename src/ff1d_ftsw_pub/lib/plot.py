@@ -6,13 +6,15 @@ import pathlib
 import typing
 
 import attrs
+import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 from .data import Loader
-from .params import GR, WIDTH_TWO_COLUMNS
+from .params import GR, WIDTH_SINGLE_COLUMN, WIDTH_TWO_COLUMNS
 from .utils import FigureMatcher
 
 # import numpy.typing as npt
@@ -31,7 +33,7 @@ class AbstractPlotter(abc.ABC):
     # label: typing.ClassVar[str]
     figure_number: int
     data: Loader
-    size: tuple[float, float]
+    size: tuple[float, float | None]
     figure: Figure = attrs.field(init=False)
     axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
 
@@ -50,6 +52,9 @@ class AbstractPlotter(abc.ABC):
         if label == "simple_example":
             size = WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481
             return SimpleExamplePlotter(number, data_interface, size, **kwargs)
+        elif label == "joint_density":
+            size = WIDTH_TWO_COLUMNS, None
+            return JointDensityPlotter(number, data_interface, size, **kwargs)
         else:
             raise NotImplementedError
 
@@ -219,6 +224,47 @@ class SimpleExamplePlotter(AbstractPlotter):
 
     def __call__(self):
         return self._plot_wrapper()
+
+
+@attrs.define
+class JointDensityPlotter(AbstractPlotter):
+    joint_grid: sns.JointGrid = attrs.field(init=False)
+
+    def _init_figure(self):
+        self.joint_grid = sns.JointGrid(
+            x=self._metre_to_micrometre(self.data.thicknesses),
+            y=self._pascal_to_megapascal(self.data.youngs_moduli),
+            height=self.size[0],
+            ratio=4,
+        )
+        self.figure = self.joint_grid.figure
+
+    def _init_axes(self):
+        self.axes = self.figure.axes
+
+    def _plot(self):
+        self.joint_grid.plot_joint(sns.scatterplot, c="C3", alpha=0.75)
+        hist_facecolor = mpl.colors.to_rgba("C3", alpha=0.25)
+        self.joint_grid.plot_marginals(
+            sns.histplot, edgecolor=None, facecolor=hist_facecolor
+        )
+
+    @staticmethod
+    def _metre_to_micrometre(var: np.ndarray) -> np.ndarray:
+        return var * 1e6
+
+    @staticmethod
+    def _pascal_to_megapascal(var: np.ndarray) -> np.ndarray:
+        return var / 1e6
+
+    def _plot_accessories(self):
+        pass
+
+    def _label(self):
+        self.joint_grid.set_axis_labels("Thickness (µm)", "Young's modulus (MPa)")
+
+    def _finalise(self):
+        self.figure.tight_layout()
 
 
 def plot(data_path, plotter): ...
