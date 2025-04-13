@@ -36,7 +36,8 @@ class AbstractPlotter(abc.ABC):
     axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
 
     def __attrs_post_init__(self):
-        self.figure, self.axes = self._init_figure()
+        self.figure = Figure(figsize=self.size)
+        self.axes = self._init_axes()
 
     @property
     def filename_handle(self):
@@ -59,7 +60,7 @@ class AbstractPlotter(abc.ABC):
         self._finalise()
 
     @abc.abstractmethod
-    def _init_figure(self): ...
+    def _init_axes(self): ...
 
     @abc.abstractmethod
     def _plot(self): ...
@@ -87,14 +88,8 @@ class AbstractPlotter(abc.ABC):
 
 
 class SimpleExamplePlotter(AbstractPlotter):
-    def _init_figure(self):
-        # TODO: might want looking into not using pyplot, that is
-        # ```
-        # fig = Figure()
-        # axes = fig.subplots()
-        # ```
-        fig, axes = plt.subplots(4, figsize=self.size, sharex=True)
-        return fig, axes
+    def _init_axes(self):
+        self.axes = self.figure.subplots(4, sharex=True)
 
     def _label(self):
         ylabels = (
