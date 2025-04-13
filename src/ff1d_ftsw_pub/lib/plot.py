@@ -38,8 +38,7 @@ class AbstractPlotter(abc.ABC):
     axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
 
     def __attrs_post_init__(self):
-        self.figure = Figure(figsize=self.size)
-        self.axes = self._init_axes()
+        self._init_figure_axes()
 
     @property
     def filename_handle(self):
@@ -64,8 +63,15 @@ class AbstractPlotter(abc.ABC):
         self._label()
         self._finalise()
 
+    def _init_figure(self):
+        self.figure = Figure(figsize=self.size)
+
     @abc.abstractmethod
     def _init_axes(self): ...
+
+    def _init_figure_axes(self):
+        self._init_figure()
+        self._init_axes()
 
     @abc.abstractmethod
     def _plot(self): ...
