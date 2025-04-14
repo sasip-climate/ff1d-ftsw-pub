@@ -6,9 +6,11 @@ import pathlib
 import typing
 
 import attrs
+import cmocean.cm as cmo
 import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.patches import FancyArrowPatch, Polygon
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -21,6 +23,7 @@ from .utils import FigureMatcher
 
 plotters_registry = dict()
 figure_sizes = {
+    FigureMatcher.SCHEMATICS: (5.4, 2.6),
     FigureMatcher.SIMPLE_EXAMPLE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
 }
@@ -99,6 +102,232 @@ class AbstractPlotter(abc.ABC):
         self._plot_wrapper()
         self._save(output_dir)
         plt.close(self.figure)
+
+
+@attrs.define
+class SchemaPlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.SCHEMATICS
+    axes: Axes
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots()
+
+    def _make_polygons(
+        self, rest_lw: float, defl_lw: float, colour: str, floe_fact: float
+    ):
+        floe_fact = 1.25
+
+        deflected_floe_top = self.data.deflection + self.data.freeboard
+        deflected_floe_bottom = self.data.deflection - self.data.draught
+
+        deflected_floe = Polygon(
+            np.vstack(
+                (
+                    np.hstack(
+                        (self.data.along_floe_axis, self.data.along_floe_axis[::-1])
+                    ),
+                    np.hstack((deflected_floe_top, deflected_floe_bottom[::-1])),
+                )
+            ).T,
+            closed=True,
+            facecolor="#0000",
+            edgecolor=colour,
+            lw=defl_lw * floe_fact,
+            label="Deflected floe",
+        )
+        at_rest_floe = Polygon(
+            [
+                [self.data.along_floe_axis[0], self.data.freeboard],
+                [self.data.along_floe_axis[-1], self.data.freeboard],
+                [self.data.along_floe_axis[-1], -self.data.draft],
+                [self.data.along_floe_axis[0], -self.data.draft],
+            ],
+            closed=True,
+            facecolor="#0000",
+            edgecolor=colour,
+            ls="--",
+            lw=rest_lw * floe_fact,
+            label="Floe at rest",
+        )
+
+        return at_rest_floe, deflected_floe
+
+    def _plot(self):
+        rest_lw = 0.65
+        defl_lw = 0.85
+        floe_fact = 1.25
+        fluid_colour = cmo.ice(0.05)
+        floe_colour = cmo.ice(0.618)
+        self._plot_fluid(rest_lw, defl_lw, fluid_colour)
+        self._plot_floe(rest_lw, defl_lw, floe_colour, floe_fact)
+
+    def _plot_fluid(
+        self, rest_lw: float, defl_lw: float, fluid_colour: tuple[float, ...]
+    ):
+        ax = self.axes
+        ax.plot(
+            (self.data.pre_floe_axis[0], self.data.post_floe_axis[-1]),
+            (0, 0),
+            c=fluid_colour,
+            ls="--",
+            lw=rest_lw,
+            label="Fluid at rest",
+        )
+        ax.plot(
+            self.data.along_floe_axis,
+            self.data.along_floe_surface,
+            lw=defl_lw,
+            c=fluid_colour,
+        )
+        ax.plot(
+            self.data.pre_floe_axis,
+            self.data.pre_floe_surface,
+            lw=defl_lw,
+            c=fluid_colour,
+        )
+        ax.plot(
+            self.data.post_floe_axis,
+            self.data.post_floe_surface,
+            lw=defl_lw,
+            c=fluid_colour,
+            label=r"$\eta(x)$",
+        )
+
+    def _plot_floe(self, rest_lw, defl_lw, floe_colour, floe_fact):
+        ax = self.axes
+        at_rest_floe, deflected_floe = self._make_polygons(
+            rest_lw, defl_lw, floe_colour, floe_fact
+        )
+        ax.add_patch(at_rest_floe)
+        ax.add_patch(deflected_floe)
+
+    def _plot_accessories(self):
+        text_dict = dict(
+            fontsize="small",
+        )
+        self._add_arrows(text_dict)
+        self._annotate(text_dict)
+
+    def _make_arrows(self):
+        arrow_dict = dict(
+            arrowstyle="<->",
+            lw=0.35,
+            mutation_scale=10,
+            shrinkA=0,
+            shrinkB=0,
+        )
+
+        idx = 74
+        thickness_arrow = FancyArrowPatch(
+            (self.data.along_floe_axis[idx], self.data.freeboard),
+            (self.data.along_floe_axis[idx], -self.data.draft),
+            **arrow_dict,
+        )
+        idx = 192
+        perturbation_arrow = FancyArrowPatch(
+            (self.data.along_floe_axis[idx], self.data.along_floe_surface[idx]),
+            (self.data.along_floe_axis[idx], self.data.deflected_floe_bottom[idx]),
+            **arrow_dict,
+        )
+        return thickness_arrow, perturbation_arrow
+
+    def _add_arrows(self, text_dict):
+        arrows = self._make_arrows()
+        for arrow in arrows:
+            self.axes.add_patch(arrow)
+        self._annotate_arrows(arrows, text_dict)
+
+    def _annotate_arrows(self, arrows: tuple[FancyArrowPatch, ...], text_dict):
+        thickness_arrow, perturbation_arrow = arrows
+        ax: Axes = self.axes
+        ax.text(
+            thickness_arrow._posA_posB[0][0] + 1,
+            (self.data.freeboard - self.data.draft) / 2,
+            "$h$",
+            horizontalalignment="left",
+            verticalalignment="center",
+            **text_dict,
+        )
+        ax.text(
+            perturbation_arrow._posA_posB[0][0] + 1,
+            (
+                2 * perturbation_arrow._posA_posB[0][1]
+                + perturbation_arrow._posA_posB[1][1]
+            )
+            / 3,
+            r"$\eta(x) - [w(x) - d]$",
+            horizontalalignment="left",
+            verticalalignment="center",
+            **text_dict,
+        )
+
+    def _annotate(self, text_dict):
+        arrowprops = dict(lw=0.5, ls=(0, (1, 5)), arrowstyle="-")
+
+        ax = self.axes
+        ax.annotate(
+            "$z=0$",
+            (
+                self.data.pre_floe_axis[0],
+                0,
+            ),
+            (
+                self.data.pre_floe_axis[0] - 5,
+                0,
+            ),
+            horizontalalignment="right",
+            verticalalignment="center",
+            arrowprops=arrowprops,
+            **text_dict,
+        )
+        ax.annotate(
+            "$z=-d$",
+            (self.data.along_floe_axis[0], -self.data.draught),
+            (self.data.pre_floe_axis[0] - 5, -self.data.draught),
+            horizontalalignment="right",
+            verticalalignment="center",
+            arrowprops=arrowprops,
+            **text_dict,
+        )
+        ax.annotate(
+            "x=0",
+            (self.data.along_floe_axis[0], self.data.deflected_floe_bottom[0]),
+            (self.data.along_floe_axis[0], self.data.deflected_floe_bottom.min() - 0.1),
+            horizontalalignment="center",
+            verticalalignment="bottom",
+            arrowprops=arrowprops,
+            **text_dict,
+        )
+        ax.annotate(
+            "x=L",
+            (self.data.along_floe_axis[-1], -self.data.draught),
+            (
+                self.data.along_floe_axis[-1],
+                self.data.deflected_floe_bottom.min() - 0.1,
+            ),
+            horizontalalignment="center",
+            verticalalignment="bottom",
+            arrowprops=arrowprops,
+            **text_dict,
+        )
+
+    def _label(self): ...
+
+    def _finalise(self):
+        ax = self.axes
+        ax.set_ylim(-0.7, 0.3)
+        ax.set_aspect(5e1)
+        ax.set_axis_off()
+
+        ax.legend(
+            ncols=4,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.25),
+            # fontsize="small",
+            handlelength=1.25,
+            handletextpad=0.5,
+        )
+        self.figure.tight_layout()
 
 
 @attrs.define
