@@ -21,7 +21,6 @@ from .utils import FigureMatcher
 
 
 def set_style():
-    print(pathlib.Path.cwd())
     path_to_style = importlib.resources.files("ff1d_ftsw_pub.lib").joinpath(
         "paper.mplstyle"
     )
