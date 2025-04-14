@@ -16,8 +16,7 @@ _manifest_name = "manifest.toml"
 
 def read_json(handle: pathlib.Path) -> dict:
     with open(handle) as f:
-        values = json.load(f)
-    return values
+        return json.load(f)
 
 
 def read_csv(handle: pathlib.Path):
