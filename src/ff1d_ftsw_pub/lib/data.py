@@ -6,12 +6,16 @@ import importlib
 import json
 import pathlib
 import tomllib
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 import attrs
 import numpy as np
 
+from .utils import FigureMatcher
+
 _manifest_name = "manifest.toml"
+
+loaders_registry = dict()
 
 
 def read_json(handle: pathlib.Path) -> dict:
@@ -46,25 +50,27 @@ class FileFormat(enum.Enum):
 
 
 class Loader(abc.ABC):
+    label: ClassVar[FigureMatcher]
+
+    @classmethod
+    def __attrs_init_subclass__(cls):
+        loaders_registry[cls.label] = cls
+
     @classmethod
     @abc.abstractmethod
     def from_raw_data(cls, raw_data: dict): ...
 
     @classmethod
-    def from_label(cls, label) -> Loader:
-        subdir = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(label)
+    def from_label(cls, label) -> Self:
+        label_path = label.name.lower()
+        subdir = importlib.resources.files("ff1d_ftsw_pub.data").joinpath(label_path)
         with importlib.resources.as_file(subdir) as physical_subdir:
-            if label == "simple_example":
-                return SimpleExampleLoader.from_raw_data(read_data(physical_subdir))
-            # TODO: reformat that bit, too much repetition
-            elif label == "joint_density":
-                return JointDensityLoader.from_raw_data(read_data(physical_subdir))
-            else:
-                raise NotImplementedError
+            return loaders_registry[label].from_raw_data(read_data(physical_subdir))
 
 
 @attrs.frozen
 class SimpleExampleLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.SIMPLE_EXAMPLE
     nondim: np.ndarray
     jumps: np.ndarray
     variables: dict
@@ -117,6 +123,7 @@ class SimpleExampleLoader(Loader):
 
 @attrs.frozen
 class JointDensityLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.JOINT_DENSITY
     thicknesses: np.ndarray
     youngs_moduli: np.ndarray
 

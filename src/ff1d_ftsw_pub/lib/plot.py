@@ -19,6 +19,12 @@ from .utils import FigureMatcher
 
 # import numpy.typing as npt
 
+plotters_registry = dict()
+figure_sizes = {
+    FigureMatcher.SIMPLE_EXAMPLE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481),
+    FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
+}
+
 
 def set_style():
     path_to_style = importlib.resources.files("ff1d_ftsw_pub.lib").joinpath(
@@ -29,7 +35,7 @@ def set_style():
 
 @attrs.define
 class AbstractPlotter(abc.ABC):
-    # label: typing.ClassVar[str]
+    label: typing.ClassVar[FigureMatcher]
     figure_number: int
     data: Loader
     size: tuple[float, float | None]
@@ -39,22 +45,20 @@ class AbstractPlotter(abc.ABC):
     def __attrs_post_init__(self):
         self._init_figure_axes()
 
+    @classmethod
+    def __attrs_init_subclass__(cls):
+        plotters_registry[cls.label] = cls
+
     @property
     def filename_handle(self):
         return f"fig{self.figure_number:02d}.pdf"
 
     @classmethod
-    def from_label(cls, label: str, **kwargs) -> AbstractPlotter:
+    def from_label(cls, label: FigureMatcher, **kwargs) -> AbstractPlotter:
         data_interface = Loader.from_label(label)
-        number = getattr(FigureMatcher, label.upper()).value
-        if label == "simple_example":
-            size = WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481
-            return SimpleExamplePlotter(number, data_interface, size, **kwargs)
-        elif label == "joint_density":
-            size = WIDTH_TWO_COLUMNS, None
-            return JointDensityPlotter(number, data_interface, size, **kwargs)
-        else:
-            raise NotImplementedError
+        number = label.value
+        figsize = figure_sizes[label]
+        return plotters_registry[label](number, data_interface, figsize, **kwargs)
 
     def _plot_wrapper(self):
         self._plot()
@@ -97,7 +101,10 @@ class AbstractPlotter(abc.ABC):
         plt.close(self.figure)
 
 
+@attrs.define
 class SimpleExamplePlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.SIMPLE_EXAMPLE
+
     def _init_axes(self):
         self.axes = self.figure.subplots(4, sharex=True)
 
@@ -233,13 +240,14 @@ class SimpleExamplePlotter(AbstractPlotter):
 
 @attrs.define
 class JointDensityPlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.JOINT_DENSITY
     joint_grid: sns.JointGrid = attrs.field(init=False)
 
     def _init_figure(self):
         self.joint_grid = sns.JointGrid(
             x=self._metre_to_micrometre(self.data.thicknesses),
             y=self._pascal_to_megapascal(self.data.youngs_moduli),
-            height=self.size[0],
+            height=self.size[1],
             ratio=4,
         )
         self.figure = self.joint_grid.figure
