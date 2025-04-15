@@ -1,0 +1,7 @@
+[json]
+files = ["strain_values.json"]
+descriptions = ["Scalar values related to parametrising fracture"]
+
+[npz]
+files = ["strain_diagnostic.npz"]
+descriptions = ["Strain, related x-axis, peaks values and abscissa"]

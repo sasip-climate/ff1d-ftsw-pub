@@ -131,6 +131,26 @@ class FractureSearchLoader(Loader):
 
 
 @attrs.frozen
+class StrainFractureLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.STRAIN_FRACTURE
+    fracture_location: float
+    threshold: float
+    variables: dict[str, np.ndarray]
+
+    @classmethod
+    def from_raw_data(cls, raw_data: dict) -> Self:
+        fracture_location, threshold, variables = cls._extract(raw_data)
+        return cls(fracture_location, threshold, variables)
+
+    @staticmethod
+    def _extract(raw_data):
+        fracture_location, threshold = (
+            raw_data["strain_values"][k] for k in ("xf", "threshold")
+        )
+        return fracture_location, threshold, raw_data["strain_diagnostic"]
+
+
+@attrs.frozen
 class SimpleExampleLoader(Loader):
     label: ClassVar[FigureMatcher] = FigureMatcher.SIMPLE_EXAMPLE
     flexural_length: float

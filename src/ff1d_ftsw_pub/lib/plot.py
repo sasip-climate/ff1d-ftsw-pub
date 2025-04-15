@@ -28,6 +28,7 @@ figure_sizes = {
         0.8 * WIDTH_SINGLE_COLUMN,
         WIDTH_SINGLE_COLUMN / 1.224,
     ),
+    FigureMatcher.STRAIN_FRACTURE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR / 0.86),
     FigureMatcher.SIMPLE_EXAMPLE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
 }
@@ -482,6 +483,79 @@ class FractureSearchPlotter(AbstractPlotter):
         bounds = self.data.energy_variables["x"][[0, -1]]
         self.axes[0].set_xlim(*bounds)
         self.axes[1].set_ylim(-0.7, 0.3)
+        self.figure.tight_layout()
+
+
+@attrs.define
+class StrainFracturePlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.STRAIN_FRACTURE
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots()
+
+    def _plot(self):
+        self.axes.plot(
+            self.data.variables["x"],
+            self.data.variables["strain"],
+            "C3",
+        )
+
+    def _highlight_peaks(self):
+        self.axes.scatter(
+            self.data.variables["peaks"],
+            self.data.variables["extrema"],
+            c="C1",
+            marker="+",
+            zorder=10,
+        )
+
+    def _plot_fracture_loc(self):
+        self.axes.axvline(self.data.fracture_location, zorder=-10, c="k", lw=0.5)
+
+    def _make_exceeding_boundaries(self):
+        strain_exceeds_threshold = np.nonzero(
+            np.abs(self.data.variables["strain"]) > self.data.threshold
+        )[0]
+        return np.vstack(
+            (
+                np.hstack(
+                    (
+                        strain_exceeds_threshold[0],
+                        strain_exceeds_threshold[
+                            np.nonzero(np.ediff1d(strain_exceeds_threshold) > 1)[0] + 1
+                        ],
+                    )
+                ),
+                np.hstack(
+                    (
+                        strain_exceeds_threshold[
+                            np.nonzero(np.ediff1d(strain_exceeds_threshold) > 1)[0]
+                        ],
+                        strain_exceeds_threshold[-1],
+                    )
+                ),
+            )
+        ).T
+
+    def _add_exceending_strain_bounds(self):
+        exceeding_strain_boundaries = self._make_exceeding_boundaries()
+        for _p in exceeding_strain_boundaries:
+            self.axes.axvspan(*self.data.variables["x"][_p], facecolor="C3", alpha=0.1)
+
+    def _plot_accessories(self):
+        self._highlight_peaks()
+        self._plot_fracture_loc()
+        self._add_exceending_strain_bounds()
+
+    def _label(self):
+        self.axes.set_xlabel("Horizontal coordinate (m)")
+        self.axes.set_ylabel("Strain")
+
+    def _finalise(self):
+        ax = self.axes
+        ax.set_xlim(self.data.variables["x"][[0, -1]])
+        ax.set_ylim(-2.5e-4, 2.5e-4)
+        ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
         self.figure.tight_layout()
 
 
