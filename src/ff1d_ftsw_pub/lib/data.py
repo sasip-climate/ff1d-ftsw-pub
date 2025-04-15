@@ -69,6 +69,29 @@ class Loader(abc.ABC):
 
 
 @attrs.frozen
+class SchematicsLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.SCHEMATICS
+    draught: float
+    freeboard: float
+    variables: dict
+
+    @classmethod
+    def from_raw_data(cls, raw_data: dict) -> Self:
+        draught, thickness, variables = cls._extract(raw_data)
+        freeboard = thickness - draught
+        print(variables.keys())
+        return cls(draught, freeboard, variables)
+
+    @staticmethod
+    def _extract(raw_data):
+        draught, thickness = (
+            raw_data["parameters"]["wuf"]["wui"]["ice"][key]
+            for key in ("draft", "thickness")
+        )
+        return draught, thickness, raw_data["results"]
+
+
+@attrs.frozen
 class SimpleExampleLoader(Loader):
     label: ClassVar[FigureMatcher] = FigureMatcher.SIMPLE_EXAMPLE
     nondim: np.ndarray

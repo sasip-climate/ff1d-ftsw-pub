@@ -107,7 +107,6 @@ class AbstractPlotter(abc.ABC):
 @attrs.define
 class SchemaPlotter(AbstractPlotter):
     label: typing.ClassVar[FigureMatcher] = FigureMatcher.SCHEMATICS
-    axes: Axes
 
     def _init_axes(self):
         self.axes = self.figure.subplots()
@@ -117,14 +116,17 @@ class SchemaPlotter(AbstractPlotter):
     ):
         floe_fact = 1.25
 
-        deflected_floe_top = self.data.deflection + self.data.freeboard
-        deflected_floe_bottom = self.data.deflection - self.data.draught
+        deflected_floe_top = self.data.variables["displacement"] + self.data.freeboard
+        deflected_floe_bottom = self.data.variables["displacement"] - self.data.draught
 
         deflected_floe = Polygon(
             np.vstack(
                 (
                     np.hstack(
-                        (self.data.along_floe_axis, self.data.along_floe_axis[::-1])
+                        (
+                            self.data.variables["along_floe_axis"],
+                            self.data.variables["along_floe_axis"][::-1],
+                        )
                     ),
                     np.hstack((deflected_floe_top, deflected_floe_bottom[::-1])),
                 )
@@ -137,10 +139,10 @@ class SchemaPlotter(AbstractPlotter):
         )
         at_rest_floe = Polygon(
             [
-                [self.data.along_floe_axis[0], self.data.freeboard],
-                [self.data.along_floe_axis[-1], self.data.freeboard],
-                [self.data.along_floe_axis[-1], -self.data.draft],
-                [self.data.along_floe_axis[0], -self.data.draft],
+                [self.data.variables["along_floe_axis"][0], self.data.freeboard],
+                [self.data.variables["along_floe_axis"][-1], self.data.freeboard],
+                [self.data.variables["along_floe_axis"][-1], -self.data.draught],
+                [self.data.variables["along_floe_axis"][0], -self.data.draught],
             ],
             closed=True,
             facecolor="#0000",
@@ -166,7 +168,10 @@ class SchemaPlotter(AbstractPlotter):
     ):
         ax = self.axes
         ax.plot(
-            (self.data.pre_floe_axis[0], self.data.post_floe_axis[-1]),
+            (
+                self.data.variables["pre_floe_axis"][0],
+                self.data.variables["post_floe_axis"][-1],
+            ),
             (0, 0),
             c=fluid_colour,
             ls="--",
@@ -174,20 +179,20 @@ class SchemaPlotter(AbstractPlotter):
             label="Fluid at rest",
         )
         ax.plot(
-            self.data.along_floe_axis,
-            self.data.along_floe_surface,
+            self.data.variables["along_floe_axis"],
+            self.data.variables["along_floe_surface"],
             lw=defl_lw,
             c=fluid_colour,
         )
         ax.plot(
-            self.data.pre_floe_axis,
-            self.data.pre_floe_surface,
+            self.data.variables["pre_floe_axis"],
+            self.data.variables["pre_floe_surface"],
             lw=defl_lw,
             c=fluid_colour,
         )
         ax.plot(
-            self.data.post_floe_axis,
-            self.data.post_floe_surface,
+            self.data.variables["post_floe_axis"],
+            self.data.variables["post_floe_surface"],
             lw=defl_lw,
             c=fluid_colour,
             label=r"$\eta(x)$",
@@ -219,14 +224,20 @@ class SchemaPlotter(AbstractPlotter):
 
         idx = 74
         thickness_arrow = FancyArrowPatch(
-            (self.data.along_floe_axis[idx], self.data.freeboard),
-            (self.data.along_floe_axis[idx], -self.data.draft),
+            (self.data.variables["along_floe_axis"][idx], self.data.freeboard),
+            (self.data.variables["along_floe_axis"][idx], -self.data.draught),
             **arrow_dict,
         )
         idx = 192
         perturbation_arrow = FancyArrowPatch(
-            (self.data.along_floe_axis[idx], self.data.along_floe_surface[idx]),
-            (self.data.along_floe_axis[idx], self.data.deflected_floe_bottom[idx]),
+            (
+                self.data.variables["along_floe_axis"][idx],
+                self.data.variables["along_floe_surface"][idx],
+            ),
+            (
+                self.data.variables["along_floe_axis"][idx],
+                self.data.variables["displacement"][idx] - self.data.draught,
+            ),
             **arrow_dict,
         )
         return thickness_arrow, perturbation_arrow
@@ -242,7 +253,7 @@ class SchemaPlotter(AbstractPlotter):
         ax: Axes = self.axes
         ax.text(
             thickness_arrow._posA_posB[0][0] + 1,
-            (self.data.freeboard - self.data.draft) / 2,
+            (self.data.freeboard - self.data.draught) / 2,
             "$h$",
             horizontalalignment="left",
             verticalalignment="center",
@@ -263,16 +274,17 @@ class SchemaPlotter(AbstractPlotter):
 
     def _annotate(self, text_dict):
         arrowprops = dict(lw=0.5, ls=(0, (1, 5)), arrowstyle="-")
+        deflected_floe_bottom = self.data.variables["displacement"] - self.data.draught
 
         ax = self.axes
         ax.annotate(
             "$z=0$",
             (
-                self.data.pre_floe_axis[0],
+                self.data.variables["pre_floe_axis"][0],
                 0,
             ),
             (
-                self.data.pre_floe_axis[0] - 5,
+                self.data.variables["pre_floe_axis"][0] - 5,
                 0,
             ),
             horizontalalignment="right",
@@ -282,8 +294,8 @@ class SchemaPlotter(AbstractPlotter):
         )
         ax.annotate(
             "$z=-d$",
-            (self.data.along_floe_axis[0], -self.data.draught),
-            (self.data.pre_floe_axis[0] - 5, -self.data.draught),
+            (self.data.variables["along_floe_axis"][0], -self.data.draught),
+            (self.data.variables["pre_floe_axis"][0] - 5, -self.data.draught),
             horizontalalignment="right",
             verticalalignment="center",
             arrowprops=arrowprops,
@@ -291,8 +303,14 @@ class SchemaPlotter(AbstractPlotter):
         )
         ax.annotate(
             "x=0",
-            (self.data.along_floe_axis[0], self.data.deflected_floe_bottom[0]),
-            (self.data.along_floe_axis[0], self.data.deflected_floe_bottom.min() - 0.1),
+            (
+                self.data.variables["along_floe_axis"][0],
+                deflected_floe_bottom[0],
+            ),
+            (
+                self.data.variables["along_floe_axis"][0],
+                deflected_floe_bottom.min() - 0.1,
+            ),
             horizontalalignment="center",
             verticalalignment="bottom",
             arrowprops=arrowprops,
@@ -300,10 +318,10 @@ class SchemaPlotter(AbstractPlotter):
         )
         ax.annotate(
             "x=L",
-            (self.data.along_floe_axis[-1], -self.data.draught),
+            (self.data.variables["along_floe_axis"][-1], -self.data.draught),
             (
-                self.data.along_floe_axis[-1],
-                self.data.deflected_floe_bottom.min() - 0.1,
+                self.data.variables["along_floe_axis"][-1],
+                deflected_floe_bottom.min() - 0.1,
             ),
             horizontalalignment="center",
             verticalalignment="bottom",

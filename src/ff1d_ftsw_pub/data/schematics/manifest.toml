@@ -1,0 +1,9 @@
+[json]
+files = ["parameters.json"]
+descriptions = ["Physical parameters used to derive the schematics"]
+
+[npz]
+files = ["results.npz"]
+descriptions = [
+    "Model results (wave surface, vertical displacement) forming the schematics",
+]
