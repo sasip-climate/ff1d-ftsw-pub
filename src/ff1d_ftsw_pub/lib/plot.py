@@ -488,6 +488,7 @@ class FractureSearchPlotter(AbstractPlotter):
 @attrs.define
 class SimpleExamplePlotter(AbstractPlotter):
     label: typing.ClassVar[FigureMatcher] = FigureMatcher.SIMPLE_EXAMPLE
+    xlim: tuple[float, float] = 0.1, 2.5
 
     def _init_axes(self):
         self.axes = self.figure.subplots(4, sharex=True)
@@ -535,6 +536,7 @@ class SimpleExamplePlotter(AbstractPlotter):
         self._plot_fracture_loc_asymptotes()
         self._add_triangle(ratio=3)
         self._add_jumps()
+        self._add_region_markers()
 
     def _plot_fracture_loc_asymptotes(self):
         lw = plt.rcParams["lines.linewidth"] / 3
@@ -613,9 +615,26 @@ class SimpleExamplePlotter(AbstractPlotter):
             for jump in self.data.jumps:
                 ax.axvline(jump, c="k", lw=lw)
 
+    def _add_region_markers(self):
+        boundaries = np.array((self.xlim[0], *self.data.jumps, self.xlim[1]))
+        middles = np.sqrt(boundaries[:-1] * boundaries[1:])
+        # Assuming curvature plot
+        _y_coord = 6
+        _y_coord_alt = 8  # to avoid the curve in region 4
+        for region_num, x_coord in zip(range(1, 5), middles):
+            y_coord = _y_coord if region_num <= 3 else _y_coord_alt
+            self.axes[2].annotate(
+                f"{region_num}",
+                (x_coord, y_coord),
+                bbox={"boxstyle": "circle", "facecolor": "#0000", "pad": 0.1},
+                ha="center",
+                va="center",
+                fontsize="x-small",
+            )
+
     def _finalise(self):
         self.axes[1].set_yscale("log")
-        self.axes[-1].set_xlim(0.1, 2.5)
+        self.axes[-1].set_xlim(self.xlim)
         self.figure.tight_layout()
 
     def __call__(self):
