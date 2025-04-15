@@ -20,6 +20,8 @@ from .params import GR, WIDTH_SINGLE_COLUMN, WIDTH_TWO_COLUMNS
 from .utils import FigureMatcher
 
 # import numpy.typing as npt
+thin_line = dict(lw=plt.rcParams["lines.linewidth"] / 3, c="k")
+thin_dashed_line = thin_line | dict(ls="--")
 
 plotters_registry = dict()
 figure_sizes = {
@@ -607,13 +609,11 @@ class SimpleExamplePlotter(AbstractPlotter):
             ax.semilogx(self.data.nondim, self.data.variables[variable_key], "C3")
 
     def _plot_accessories(self):
-        params = dict(lw=plt.rcParams["lines.linewidth"] / 3, c="k")
-        params_asymptotes = params | dict(ls="--")
-        self._plot_fracture_loc_asymptotes(params_asymptotes)
+        self._plot_fracture_loc_asymptotes(thin_dashed_line)
         self._add_triangle(ratio=3)
-        self._add_jumps(params)
+        self._add_jumps(thin_line)
         self._add_region_markers()
-        self._add_relaxation_asymptote(params_asymptotes)
+        self._add_relaxation_asymptote(thin_dashed_line)
 
     def _plot_fracture_loc_asymptotes(self, params):
         horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
