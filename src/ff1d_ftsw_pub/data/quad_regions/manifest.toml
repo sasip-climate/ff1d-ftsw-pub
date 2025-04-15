@@ -1,0 +1,7 @@
+[csv]
+files = ["nondim_wavenumbers.csv", "normalised_fractures.csv"]
+descriptions = ["Wavenumbers used as examples", "Normalised fracture locations"]
+
+[npz]
+files = ["quad_0.npz", "quad_1.npz", "quad_2.npz", "quad_3.npz"]
+descriptions = ["Results of the experiment for four different wavenumbers"]

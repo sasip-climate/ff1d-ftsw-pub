@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import importlib
+import itertools
 import pathlib
 import typing
 
@@ -32,6 +33,7 @@ figure_sizes = {
     ),
     FigureMatcher.STRAIN_FRACTURE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR / 0.86),
     FigureMatcher.SIMPLE_EXAMPLE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481),
+    FigureMatcher.QUAD_REGIONS: (WIDTH_SINGLE_COLUMN, WIDTH_SINGLE_COLUMN / GR / 0.940),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
 }
 
@@ -717,6 +719,95 @@ class SimpleExamplePlotter(AbstractPlotter):
 
     def __call__(self):
         return self._plot_wrapper()
+
+
+@attrs.define
+class QuadRegionsPlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.QUAD_REGIONS
+    twin_axes: typing.Sequence[Axes] = attrs.field(init=False)
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots(2, 2, sharex=True, sharey=True)
+        self.twin_axes = [ax.twinx() for ax in np.ravel(self.axes)]
+        for tax0, tax1 in zip(self.twin_axes[:-1], self.twin_axes[1:]):
+            tax0.sharey(tax1)
+
+    def _plot(self):
+        lw = 1
+        self._plot_free_energy()
+        self._plot_curvatures()
+
+    def _plot_free_energy(self):
+        for i, ax in enumerate(np.ravel(self.axes)):
+            ax.plot(
+                self.data.variables[i]["x"],
+                self.data.variables[i]["free_energy"],
+                "C2",
+                label=r"$F(x_1)$",
+            )
+
+    def _plot_curvatures(self):
+        for i, tax in enumerate(np.ravel(self.twin_axes)):
+            tax.plot(
+                self.data.variables[i]["x"],
+                self.data.variables[i]["curvature"],
+                "C3",
+                label=r"$\kappa(x)$",
+            )
+            tax.plot(
+                self.data.variables[i]["x"],
+                self.data.variables[i]["conforming_curvature"],
+                "C4--",
+                label=r"$\kappa_{\mathrm{conf}}(x)$",
+            )
+
+    def _plot_accessories(self):
+        self._add_fracture_locations()
+        self._add_zero_curvature()
+
+    def _add_fracture_locations(self):
+        for i, ax in enumerate(np.ravel(self.axes)):
+            xf = self.data.normalised_fractures[i]
+            ax.axvline(xf, **thin_line)
+            if not np.isclose(xf - 0.5, 0):
+                ax.axvline(1 - xf, **thin_line)
+
+    def _add_zero_curvature(self):
+        for tax in np.ravel(self.twin_axes):
+            tax.axhline(0, **thin_dashed_line)
+
+    def _label(self):
+        axes, twin_axes = self.axes, self.twin_axes
+        for i, ax in enumerate(np.ravel(axes)):
+            ax.set_title(f"Region {i + 1}, $k L_D = {{{self.data.nondim[i]:1.4f}}}$")
+
+        for ax in axes[1, :]:
+            ax.set_xlabel("Normalised coordinate")
+        for ax in axes[:, 0]:
+            ax.set_ylabel("Free energy (J m$^{-2}$)")
+        for tax in twin_axes[1::2]:
+            tax.set_ylabel("Curvature (m$^{-1}$)")
+        handles, labels = zip(
+            ax.get_legend_handles_labels(), tax.get_legend_handles_labels()
+        )
+        handles, labels = (itertools.chain(*_e) for _e in (handles, labels))
+
+        self.figure.legend(
+            handles=handles,
+            labels=labels,
+            ncols=3,
+            handlelength=1.8,
+            loc="upper center",
+            fontsize="small",
+            bbox_to_anchor=(0.525, 1.06),
+            handletextpad=0.33,
+            columnspacing=1.5,
+        )
+
+    def _finalise(self):
+        for tax in self.twin_axes[::2]:
+            plt.setp(tax.get_yticklabels(), visible=False)
+        self.figure.tight_layout()
 
 
 @attrs.define

@@ -203,6 +203,27 @@ class SimpleExampleLoader(Loader):
 
 
 @attrs.frozen
+class QuadRegionsLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.QUAD_REGIONS
+    nondim: np.ndarray
+    normalised_fractures: np.ndarray
+    variables: list[dict[str, np.ndarray]]
+
+    @classmethod
+    def from_raw_data(cls, raw_data) -> Self:
+        return cls(*cls._extract(raw_data))
+
+    @staticmethod
+    def _extract(
+        raw_data,
+    ) -> tuple[np.ndarray, np.ndarray, list[dict[str, np.ndarray]]]:
+        nondim, normalised_fractures = (
+            raw_data[k] for k in ("nondim_wavenumbers", "normalised_fractures")
+        )
+        return nondim, normalised_fractures, [raw_data[f"quad_{i}"] for i in range(4)]
+
+
+@attrs.frozen
 class JointDensityLoader(Loader):
     label: ClassVar[FigureMatcher] = FigureMatcher.JOINT_DENSITY
     thicknesses: np.ndarray
