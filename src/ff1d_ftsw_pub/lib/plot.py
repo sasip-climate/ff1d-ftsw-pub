@@ -24,6 +24,10 @@ from .utils import FigureMatcher
 plotters_registry = dict()
 figure_sizes = {
     FigureMatcher.SCHEMATICS: (5.4, 2.6),
+    FigureMatcher.FRACTURE_SEARCH: (
+        0.8 * WIDTH_SINGLE_COLUMN,
+        WIDTH_SINGLE_COLUMN / 1.224,
+    ),
     FigureMatcher.SIMPLE_EXAMPLE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
 }
@@ -40,7 +44,7 @@ def set_style():
 class AbstractPlotter(abc.ABC):
     label: typing.ClassVar[FigureMatcher]
     figure_number: int
-    data: Loader
+    data: type[Loader]
     size: tuple[float, float | None]
     figure: Figure = attrs.field(init=False)
     axes: Axes | typing.Sequence[Axes] = attrs.field(init=False)
@@ -345,6 +349,139 @@ class SchemaPlotter(AbstractPlotter):
             handlelength=1.25,
             handletextpad=0.5,
         )
+        self.figure.tight_layout()
+
+
+@attrs.define
+class FractureSearchPlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.FRACTURE_SEARCH
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots(2, sharex=True, height_ratios=(1, 1 / GR))
+
+    def _make_polygons(self, lw):
+        along_floe_axis = self.data.deflection_variables["pref_x"]
+        deflected_floe_top = (
+            self.data.deflection_variables["pref_displacement"] + self.data.freeboard
+        )
+        deflected_floe_bottom = (
+            self.data.deflection_variables["pref_displacement"] - self.data.draught
+        )
+        deflected_floe = Polygon(
+            np.vstack(
+                (
+                    np.hstack((along_floe_axis, along_floe_axis[::-1])),
+                    np.hstack((deflected_floe_top, deflected_floe_bottom[::-1])),
+                )
+            ).T,
+            closed=True,
+            facecolor="#0000",
+            edgecolor="C3",
+            lw=lw,
+        )
+
+        postf_along_floe_axes = [
+            self.data.deflection_variables[k] for k in ("postf_x_left", "postf_x_right")
+        ]
+        postf_deflected_floe_tops = [
+            self.data.deflection_variables[k] + self.data.freeboard
+            for k in ("postf_displacement_left", "postf_displacement_right")
+        ]
+        postf_deflected_floe_bottoms = [
+            self.data.deflection_variables[k] - self.data.draught
+            for k in ("postf_displacement_left", "postf_displacement_right")
+        ]
+        postf_deflected_floes = [
+            Polygon(
+                np.vstack(
+                    (np.hstack((_x, _x[::-1])), np.hstack((_df_top, _df_bottom[::-1])))
+                ).T,
+                closed=True,
+                facecolor="#0000",
+                edgecolor=f"C{i}",
+                lw=lw,
+            )
+            for i, (_x, _df_top, _df_bottom) in enumerate(
+                zip(
+                    postf_along_floe_axes,
+                    postf_deflected_floe_tops,
+                    postf_deflected_floe_bottoms,
+                )
+            )
+        ]
+        return deflected_floe, *postf_deflected_floes
+
+    def _plot(self):
+        lw = 1.5
+        self._plot_energy(lw)
+        self._plot_floes(lw)
+
+    def _plot_energy(self, lw):
+        ax = self.axes[0]
+        x = self.data.energy_variables["x"]
+        energy = self.data.energy_variables["energy"]
+        ax.plot(x, energy[:, 0], lw=lw, label="Left fragment")
+        ax.plot(x, energy[:, 1], lw=lw, label="Right fragment")
+        ax.plot(
+            x,
+            energy.sum(axis=1) + self.data.energy_scalars["energy_release_rate"],
+            label="Post-fracture total",
+            ls="--",
+            lw=lw,
+        )
+        ax.axhline(
+            self.data.energy_scalars["initial_energy"],
+            label="Initial floe",
+            c="C3",
+            lw=lw,
+        )
+
+    def _plot_floes(self, lw):
+        floes = self._make_polygons(lw)
+        ax = self.axes[1]
+        for patch in floes:
+            ax.add_patch(patch)
+
+    def _plot_accessories(self):
+        self._plot_fracture_loc()
+        self._plot_relax_length()
+
+    def _plot_fracture_loc(self):
+        self.axes[0].axvline(self.data.energy_scalars["xf"], lw=0.5, zorder=-10, c="k")
+
+    def _plot_relax_length(self):
+        xf = self.data.energy_scalars["xf"]
+        relaxation_length = self.data.energy_scalars["relaxation_length"]
+        lb, ub = xf + np.array((-relaxation_length, relaxation_length)) / 2
+        self.axes[1].axvspan(lb, ub, alpha=0.1, facecolor="C3", zorder=-10)
+
+    def _label(self):
+        ax = self.axes[0]
+        ax.set_xlabel("Along-floe coordinate of a hypothetical fracture (m)")
+        ax.set_ylabel("Energy (J m$^{-2}$)")
+
+        ax = self.axes[1]
+        ax.set_xlabel("Horizontal coordinate (m)")
+        ax.set_ylabel("Vertical coordinate (m)")
+
+        self.figure.legend(
+            ncols=4,
+            handlelength=1.85,
+            loc="upper center",
+            bbox_to_anchor=(
+                (self.axes[0].bbox.x0 + self.axes[0].bbox.x1)
+                / 2
+                / self.figure.bbox.width,
+                1.05,
+            ),
+            handletextpad=0.33,
+            columnspacing=1,
+        )
+
+    def _finalise(self):
+        bounds = self.data.energy_variables["x"][[0, -1]]
+        self.axes[0].set_xlim(*bounds)
+        self.axes[1].set_ylim(-0.7, 0.3)
         self.figure.tight_layout()
 
 

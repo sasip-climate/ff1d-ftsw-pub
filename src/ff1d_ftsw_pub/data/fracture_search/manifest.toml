@@ -1,0 +1,13 @@
+[json]
+files = ["parameters.json", "fracture_values.json"]
+descriptions = [
+    "Physical parameters used for the fracture search",
+    "Scalar values related to fracture",
+]
+
+[npz]
+files = ["energy_diagnostic.npz", "fracture_deflections.npz"]
+descriptions = [
+    "Energy for hypothetical fragments and related x-axis",
+    "Deflection of pre- and post-fracture fragments, corresponding x-axes",
+]

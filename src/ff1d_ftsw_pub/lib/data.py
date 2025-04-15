@@ -67,8 +67,10 @@ class Loader(abc.ABC):
         with importlib.resources.as_file(subdir) as physical_subdir:
             return loaders_registry[label].from_raw_data(read_data(physical_subdir))
 
+
 def compute_freeboard(thickness: float, draught: float) -> float:
     return thickness - draught
+
 
 @attrs.frozen
 class SchematicsLoader(Loader):
@@ -90,6 +92,42 @@ class SchematicsLoader(Loader):
             for key in ("draft", "thickness")
         )
         return draught, thickness, raw_data["results"]
+
+
+@attrs.frozen
+class FractureSearchLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.FRACTURE_SEARCH
+    draught: float
+    freeboard: float
+    energy_scalars: dict[str, float]
+    energy_variables: dict[str, np.ndarray]
+    deflection_variables: dict[str, np.ndarray]
+
+    @classmethod
+    def from_raw_data(cls, raw_data: dict) -> Self:
+        draught, thickness, variables = cls._extract(raw_data)
+        freeboard = compute_freeboard(thickness, draught)
+        return cls(draught, freeboard, *variables)
+
+    @staticmethod
+    def _extract(raw_data):
+        draught, thickness = (
+            raw_data["parameters"]["wuf"]["wui"]["ice"][key]
+            for key in ("draft", "thickness")
+        )
+
+        return (
+            draught,
+            thickness,
+            (
+                raw_data[k]
+                for k in (
+                    "fracture_values",
+                    "energy_diagnostic",
+                    "fracture_deflections",
+                )
+            ),
+        )
 
 
 @attrs.frozen
