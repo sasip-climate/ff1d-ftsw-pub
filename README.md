@@ -8,7 +8,7 @@
 ## Table of Contents
 
 - [Installation](#installation)
-- [License](#license)
+- [Licence](#licence)
 
 ## Installation
 
