@@ -1,0 +1,20 @@
+[csv]
+files = [
+    "nondim_wavenumbers.csv",
+    "normalised_fractures.csv",
+    "normalised_relax_lengths.csv",
+]
+descriptions = [
+    "Wavenumbers used as examples",
+    "Normalised fracture locations",
+    "Normalised relaxation lengths",
+]
+
+[npz]
+files = [
+    "quad_disp_0.npz",
+    "quad_disp_1.npz",
+    "quad_disp_2.npz",
+    "quad_disp_3.npz",
+]
+descriptions = ["Results of the experiment for four different wavenumbers"]

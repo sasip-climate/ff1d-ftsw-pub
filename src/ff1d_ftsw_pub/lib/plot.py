@@ -34,6 +34,10 @@ figure_sizes = {
     FigureMatcher.STRAIN_FRACTURE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR / 0.86),
     FigureMatcher.SIMPLE_EXAMPLE: (WIDTH_TWO_COLUMNS, WIDTH_TWO_COLUMNS / GR * 3.481),
     FigureMatcher.QUAD_REGIONS: (WIDTH_SINGLE_COLUMN, WIDTH_SINGLE_COLUMN / GR / 0.940),
+    FigureMatcher.QUAD_REGIONS_DISP: (
+        WIDTH_SINGLE_COLUMN,
+        WIDTH_SINGLE_COLUMN / GR / 0.860,
+    ),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
 }
 
@@ -806,6 +810,84 @@ class QuadRegionsPlotter(AbstractPlotter):
     def _finalise(self):
         for tax in self.twin_axes[::2]:
             plt.setp(tax.get_yticklabels(), visible=False)
+        self.figure.tight_layout()
+
+
+@attrs.define
+class QuadRegionsDispPlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.QUAD_REGIONS_DISP
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots(2, 2, sharex=True, sharey=True)
+
+    def _plot(self):
+        self._plot_deflection()
+
+    def _plot_deflection(self):
+        for i, ax in enumerate(np.ravel(self.axes)):
+            ax.plot(
+                self.data.variables[i]["pref_x"],
+                self.data.variables[i]["pref_w"],
+                color="C3",
+                label="Initial floe",
+            )
+            ax.plot(
+                self.data.variables[i]["postf_x1"],
+                self.data.variables[i]["postf_w1"],
+                "--",
+                label="Left fragment",
+            )
+            ax.plot(
+                self.data.variables[i]["postf_x2"],
+                self.data.variables[i]["postf_w2"],
+                "--",
+                label="Right fragment",
+            )
+
+    def _plot_accessories(self):
+        self._add_zero_deflection()
+        self._add_fracture_locations()
+        self._add_relaxation_lengths()
+
+    def _add_zero_deflection(self):
+        for ax in np.ravel(self.axes):
+            ax.axhline(0, **thin_dashed_line)
+
+    def _add_fracture_locations(self):
+        for i, ax in enumerate(np.ravel(self.axes)):
+            ax.axvline(self.data.normalised_fractures[i], **thin_line)
+
+    def _add_relaxation_lengths(self):
+        for i, ax in enumerate(np.ravel(self.axes)):
+            lb, rb = (
+                np.array((-1, 1)) * self.data.relaxation_lengths[i] / 2
+            ) + self.data.normalised_fractures[i]
+            ax.axvspan(lb, rb, alpha=0.2, facecolor="C3")
+
+    def _label(self):
+        axes = self.axes
+        for i, ax in enumerate(np.ravel(axes)):
+            ax.set_title(f"Region {i + 1}, $k L_D = {{{self.data.nondim[i]:1.4f}}}$")
+        for ax in axes[1, :]:
+            ax.set_xlabel("Normalised coordinate")
+        for ax in axes[:, 0]:
+            ax.set_ylabel("Normalised deflection")
+
+        handles, labels = ax.get_legend_handles_labels()
+
+        self.figure.legend(
+            handles=handles,
+            labels=labels,
+            ncols=3,
+            handlelength=2.4,
+            loc="upper center",
+            # fontsize="small",
+            bbox_to_anchor=(0.525, 1.05),
+            handletextpad=0.33,
+            columnspacing=1.5,
+        )
+
+    def _finalise(self):
         self.figure.tight_layout()
 
 

@@ -224,6 +224,43 @@ class QuadRegionsLoader(Loader):
 
 
 @attrs.frozen
+class QuadRegionsDispLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.QUAD_REGIONS_DISP
+    nondim: np.ndarray
+    normalised_fractures: np.ndarray
+    relaxation_lengths: np.ndarray
+    variables: list[dict[str, np.ndarray]]
+
+    @classmethod
+    def from_raw_data(cls, raw_data) -> Self:
+        nondim, normalised_fractures, relaxation_lengths, variables = cls._extract(
+            raw_data
+        )
+        normalised_fractures = cls._clean_norm_fractures(normalised_fractures)
+        return cls(nondim, normalised_fractures, relaxation_lengths, variables)
+
+    @staticmethod
+    def _extract(
+        raw_data,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[dict[str, np.ndarray]]]:
+        short_arrays = (
+            raw_data[k]
+            for k in (
+                "nondim_wavenumbers",
+                "normalised_fractures",
+                "normalised_relax_lengths",
+            )
+        )
+        return *short_arrays, [raw_data[f"quad_disp_{i}"] for i in range(4)]
+
+    @staticmethod
+    def _clean_norm_fractures(normalised_fractures: np.ndarray) -> np.ndarray:
+        mask = normalised_fractures > 0.5
+        normalised_fractures[mask] = 1 - normalised_fractures[mask]
+        return normalised_fractures
+
+
+@attrs.frozen
 class JointDensityLoader(Loader):
     label: ClassVar[FigureMatcher] = FigureMatcher.JOINT_DENSITY
     thicknesses: np.ndarray
