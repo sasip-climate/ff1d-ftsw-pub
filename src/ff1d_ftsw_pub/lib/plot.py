@@ -933,4 +933,3 @@ class JointDensityPlotter(AbstractPlotter):
         self.figure.tight_layout()
 
 
-def plot(data_path, plotter): ...
