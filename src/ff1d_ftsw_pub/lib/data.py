@@ -67,6 +67,8 @@ class Loader(abc.ABC):
         with importlib.resources.as_file(subdir) as physical_subdir:
             return loaders_registry[label].from_raw_data(read_data(physical_subdir))
 
+def compute_freeboard(thickness: float, draught: float) -> float:
+    return thickness - draught
 
 @attrs.frozen
 class SchematicsLoader(Loader):
@@ -78,8 +80,7 @@ class SchematicsLoader(Loader):
     @classmethod
     def from_raw_data(cls, raw_data: dict) -> Self:
         draught, thickness, variables = cls._extract(raw_data)
-        freeboard = thickness - draught
-        print(variables.keys())
+        freeboard = compute_freeboard(thickness, draught)
         return cls(draught, freeboard, variables)
 
     @staticmethod
