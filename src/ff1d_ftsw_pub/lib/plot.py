@@ -533,17 +533,18 @@ class SimpleExamplePlotter(AbstractPlotter):
             ax.semilogx(self.data.nondim, self.data.variables[variable_key], "C3")
 
     def _plot_accessories(self):
-        self._plot_fracture_loc_asymptotes()
+        params = dict(lw=plt.rcParams["lines.linewidth"] / 3, c="k")
+        params_asymptotes = params | dict(ls="--")
+        self._plot_fracture_loc_asymptotes(params_asymptotes)
         self._add_triangle(ratio=3)
-        self._add_jumps()
+        self._add_jumps(params)
         self._add_region_markers()
 
-    def _plot_fracture_loc_asymptotes(self):
-        lw = plt.rcParams["lines.linewidth"] / 3
+    def _plot_fracture_loc_asymptotes(self, params):
         horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
         ax = self.axes[0]
         for val in horizontal_asymptotes:
-            ax.axhline(val, c="k", lw=lw, ls="--")
+            ax.axhline(val, **params)
 
     def _make_triangle_coordinates(self, ratio):
         # `ratio` gives how many centred triangles would fit, in logspace,
@@ -609,11 +610,10 @@ class SimpleExamplePlotter(AbstractPlotter):
             fontsize=fontsize,
         )
 
-    def _add_jumps(self):
-        lw = plt.rcParams["lines.linewidth"] / 3
+    def _add_jumps(self, params):
         for ax in self.axes[1:]:
             for jump in self.data.jumps:
-                ax.axvline(jump, c="k", lw=lw)
+                ax.axvline(jump, **params)
 
     def _add_region_markers(self):
         boundaries = np.array((self.xlim[0], *self.data.jumps, self.xlim[1]))
