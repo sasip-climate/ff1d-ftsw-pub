@@ -39,6 +39,7 @@ figure_sizes = {
         WIDTH_SINGLE_COLUMN / GR / 0.860,
     ),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
+    FigureMatcher.ENS_AMPLITUDE: (WIDTH_SINGLE_COLUMN, WIDTH_SINGLE_COLUMN / GR / 1.01),
 }
 
 
@@ -933,3 +934,91 @@ class JointDensityPlotter(AbstractPlotter):
         self.figure.tight_layout()
 
 
+@attrs.define
+class EnsembleAmplitudePlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.ENS_AMPLITUDE
+    twin_ax: Axes = attrs.field(init=False)
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots()
+        self.twin_ax = self.axes.twiny()
+        self.twin_ax.sharex(self.axes)
+
+    def _plot(self):
+        self._plot_ensemble()
+        self._plot_data()
+
+    def _plot_ensemble(self):
+        hue = "flexural_rigidity"
+        sns.lineplot(
+            self.data.ensemble,
+            x="nondim",
+            y="amplitude_threshold",
+            ax=self.axes,
+            hue=hue,
+            palette="crest",
+            legend="full",
+        )
+        self._add_colorbar(hue)
+
+    def _plot_data(self):
+        sns.scatterplot(
+            x=(
+                self.data.experimental["wavenumbers"]
+                * self.data.experimental["flex_lengths"]
+            ),
+            y=self.data.experimental["critical_amplitudes"],
+            ax=self.axes,
+            color="C3",
+            zorder=10,
+            alpha=0.75,
+            label=r"$a_\mathrm{cr}(kL_D)$",
+        )
+        sns.scatterplot(
+            x=self.data.experimental["flex_lengths"] / self.data.experimental["fwhm"],
+            y=self.data.experimental["critical_amplitudes"],
+            ax=self.twin_ax,
+            color="C4",
+            marker="s",
+            alpha=0.75,
+            zorder=8,
+            label=r"$a_\mathrm{cr}(L_D / \mathrm{FWHM})$",
+        )
+
+    def _plot_accessories(self): ...
+
+    def _add_colorbar(self, hue):
+        if hue == "flexural_rigidity":
+            label = "Flexural rigidity (Pa m$^{3}$)"
+        else:
+            raise NotImplementedError
+        vmin, vmax = np.sort(
+            (self.data.ensemble.select(hue).unique().to_numpy()[:, 0])
+        )[[0, -1]]
+        self.figure.colorbar(
+            mpl.cm.ScalarMappable(
+                norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax, clip=False),
+                cmap="crest",
+            ),
+            ax=self.twin_ax,
+            label=label,
+        )
+
+    def _label(self):
+        ax, axt = self.axes, self.twin_ax
+        axt.set_xlabel(r"$\frac{L_D}{\mathrm{FWHM}}$")
+        ax.set_xlabel("$k L_D$")
+        ax.set_ylabel("Critical amplitude (m)")
+
+        ax.get_legend().set_visible(False)
+        axt.get_legend().set_visible(False)
+
+        handles, labels = zip(
+            list(zip(*ax.get_legend_handles_labels()))[-1],
+            next(zip(*axt.get_legend_handles_labels())),
+        )
+        ax.legend(handles, labels)
+
+    def _finalise(self):
+        self.axes.loglog()
+        self.figure.tight_layout()

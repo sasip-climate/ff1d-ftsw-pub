@@ -1,0 +1,9 @@
+[npz]
+files = ["experimental.npz"]
+descriptions = [
+    "Experimental results reproduced with permission of Baptiste Auvity",
+]
+
+[parquet]
+files = ["ensemble.parquet"]
+descriptions = ["Numerical results"]

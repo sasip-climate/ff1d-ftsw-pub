@@ -10,6 +10,7 @@ from typing import Any, ClassVar, Self
 
 import attrs
 import numpy as np
+import polars as pl
 
 from .utils import FigureMatcher
 
@@ -44,6 +45,7 @@ class FileFormat(enum.Enum):
     csv = read_csv
     json = read_json
     npz = np.load
+    parquet = pl.read_parquet
 
     def __call__(self, handle: pathlib.Path):
         return self.value(handle)
@@ -271,3 +273,14 @@ class JointDensityLoader(Loader):
         raw_data = next(iter(raw_data.values()))
         _h, _Y = (raw_data[k] for k in ("thicknesses", "youngs_moduli"))
         return cls(_h, _Y)
+
+
+@attrs.frozen
+class EnsembleAmplitudeLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.ENS_AMPLITUDE
+    experimental: dict[str, np.ndarray]
+    ensemble: pl.DataFrame
+
+    @classmethod
+    def from_raw_data(cls, raw_data) -> Self:
+        return cls(*(raw_data[k] for k in ("experimental", "ensemble")))
