@@ -495,7 +495,7 @@ class SimpleExamplePlotter(AbstractPlotter):
 
     def _label(self):
         ylabels = (
-            "Fracture location",
+            "Normalised\nfracture location",
             "Crit. amplitude (m)",
             "Crit. curvature (m$^{-1}$)",
             "Relaxation length (m)",
