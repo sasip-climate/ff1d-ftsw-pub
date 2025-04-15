@@ -9,7 +9,7 @@ import pytest
 import ff1d_ftsw_pub.lib.data as libdata
 
 data_root = "ff1d_ftsw_pub.data"
-nb_figures = 2
+nb_figures = len(libdata.loaders_registry)
 
 
 def get_manifest_handle(subdir: importlib.resources.abc.Traversable):
