@@ -133,22 +133,21 @@ class FractureSearchLoader(Loader):
 @attrs.frozen
 class SimpleExampleLoader(Loader):
     label: ClassVar[FigureMatcher] = FigureMatcher.SIMPLE_EXAMPLE
+    flexural_length: float
     nondim: np.ndarray
     jumps: np.ndarray
     variables: dict
 
     @classmethod
     def from_raw_data(cls, raw_data) -> Self:
-        nondim, jumps, variables = cls._extract(raw_data)
+        flexural_length, nondim, jumps, variables = cls._extract(raw_data)
         variables = cls._clean(variables)
-        return cls(nondim, jumps, variables)
+        return cls(flexural_length, nondim, jumps, variables)
 
     @staticmethod
     def _extract(raw_data):
-        nondim = (
-            raw_data["parameters"]["varnish"]["flexural_length"]
-            * raw_data["results"]["wavenumbers"]
-        )
+        flexural_length = raw_data["parameters"]["varnish"]["flexural_length"]
+        nondim = flexural_length * raw_data["results"]["wavenumbers"]
         variables = {
             k: raw_data["results"][k]
             for k in (
@@ -158,7 +157,7 @@ class SimpleExampleLoader(Loader):
                 "normalised_fractures",
             )
         }
-        return nondim, raw_data["jumps"], variables
+        return flexural_length, nondim, raw_data["jumps"], variables
 
     @staticmethod
     def _clean_fracture_locations(fracture_locations: np.ndarray) -> np.ndarray:

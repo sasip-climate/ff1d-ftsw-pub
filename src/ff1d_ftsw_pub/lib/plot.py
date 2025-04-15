@@ -539,6 +539,7 @@ class SimpleExamplePlotter(AbstractPlotter):
         self._add_triangle(ratio=3)
         self._add_jumps(params)
         self._add_region_markers()
+        self._add_relaxation_asymptote(params_asymptotes)
 
     def _plot_fracture_loc_asymptotes(self, params):
         horizontal_asymptotes = 1 / 6, 1 / 3, 1 / 2
@@ -631,6 +632,9 @@ class SimpleExamplePlotter(AbstractPlotter):
                 va="center",
                 fontsize="x-small",
             )
+
+    def _add_relaxation_asymptote(self, params):
+        self.axes[3].axhline(self.data.flexural_length * 2**0.5, **params)
 
     def _finalise(self):
         self.axes[1].set_yscale("log")
