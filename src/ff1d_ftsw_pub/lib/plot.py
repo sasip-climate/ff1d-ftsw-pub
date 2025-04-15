@@ -780,18 +780,17 @@ class QuadRegionsPlotter(AbstractPlotter):
         axes, twin_axes = self.axes, self.twin_axes
         for i, ax in enumerate(np.ravel(axes)):
             ax.set_title(f"Region {i + 1}, $k L_D = {{{self.data.nondim[i]:1.4f}}}$")
-
         for ax in axes[1, :]:
             ax.set_xlabel("Normalised coordinate")
         for ax in axes[:, 0]:
             ax.set_ylabel("Free energy (J m$^{-2}$)")
         for tax in twin_axes[1::2]:
             tax.set_ylabel("Curvature (m$^{-1}$)")
+
         handles, labels = zip(
             ax.get_legend_handles_labels(), tax.get_legend_handles_labels()
         )
         handles, labels = (itertools.chain(*_e) for _e in (handles, labels))
-
         self.figure.legend(
             handles=handles,
             labels=labels,
