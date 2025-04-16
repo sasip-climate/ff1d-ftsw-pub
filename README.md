@@ -1,7 +1,10 @@
 # ff1d-ftsw-pub
 
-[![PyPI - Version](https://img.shields.io/pypi/v/ff1d-ftsw-pub.svg)](https://pypi.org/project/ff1d-ftsw-pub)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ff1d-ftsw-pub.svg)](https://pypi.org/project/ff1d-ftsw-pub)
+<!-- [![PyPI - Version](https://img.shields.io/pypi/v/ff1d-ftsw-pub.svg)](https://pypi.org/project/ff1d-ftsw-pub) -->
+<!-- [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ff1d-ftsw-pub.svg)](https://pypi.org/project/ff1d-ftsw-pub) -->
+
+Data accompanying `A numerical model of wave-induced sea ice breakup based on an
+energy criterion`, and script to reproduce the figures.
 
 -----
 
@@ -13,9 +16,9 @@
 
 ## Installation
 
-```console
-pip install ff1d-ftsw-pub
-```
+<!-- ```console -->
+<!-- pip install ff1d-ftsw-pub -->
+<!-- ``` -->
 
 ### From the repository
 
