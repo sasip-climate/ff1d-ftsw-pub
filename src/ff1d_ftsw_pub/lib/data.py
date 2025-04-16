@@ -284,3 +284,32 @@ class EnsembleAmplitudeLoader(Loader):
     @classmethod
     def from_raw_data(cls, raw_data) -> Self:
         return cls(*(raw_data[k] for k in ("experimental", "ensemble")))
+
+
+@attrs.frozen
+class EnsembleDimensionlessLoader(Loader):
+    label: ClassVar[FigureMatcher] = FigureMatcher.ENS_DIMENSIONLESS
+    ensemble: pl.DataFrame
+    harmonics: list[int]
+
+    @classmethod
+    def from_raw_data(cls, raw_data) -> Self:
+        max_harmonic = 4  # can be up to 5, but plotting not robust if not 4
+        return cls(*cls._aggregate(raw_data["multi_harmonics_ensemble"], max_harmonic))
+
+    @staticmethod
+    def _aggregate(
+        ensemble: pl.DataFrame, max_harmonic: int
+    ) -> tuple[pl.DataFrame, list[int]]:
+        aggregated_results = (
+            ensemble.filter(pl.col("harmonic_number") <= max_harmonic)
+            .group_by("nondim", "harmonic_number")
+            .agg(
+                pl.col("normalised_dis_length").mean(),
+                pl.col("nondim2").mean(),
+            )
+        )
+        harmonics = (
+            aggregated_results.get_column("harmonic_number").unique().sort().to_list()
+        )
+        return aggregated_results, harmonics

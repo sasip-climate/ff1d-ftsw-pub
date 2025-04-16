@@ -10,4 +10,4 @@ class FigureMatcher(enum.Enum):
     QUAD_REGIONS_DISP = 6
     JOINT_DENSITY = 7
     ENS_AMPLITUDE = 8
-    ENS_CONSTANTS = 9
+    ENS_DIMENSIONLESS = 9

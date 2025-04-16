@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import FancyArrowPatch, Polygon
 import matplotlib.pyplot as plt
 import numpy as np
+import polars as pl
 import seaborn as sns
 
 from .data import Loader
@@ -40,6 +41,10 @@ figure_sizes = {
     ),
     FigureMatcher.JOINT_DENSITY: (None, WIDTH_TWO_COLUMNS),
     FigureMatcher.ENS_AMPLITUDE: (WIDTH_SINGLE_COLUMN, WIDTH_SINGLE_COLUMN / GR / 1.01),
+    FigureMatcher.ENS_DIMENSIONLESS: (
+        WIDTH_TWO_COLUMNS,
+        WIDTH_TWO_COLUMNS / GR * 2 / 1.019,
+    ),
 }
 
 
@@ -1022,3 +1027,88 @@ class EnsembleAmplitudePlotter(AbstractPlotter):
     def _finalise(self):
         self.axes.loglog()
         self.figure.tight_layout()
+
+
+@attrs.define
+class EnsembleDimensionlessPlotter(AbstractPlotter):
+    label: typing.ClassVar[FigureMatcher] = FigureMatcher.ENS_DIMENSIONLESS
+
+    def _init_axes(self):
+        self.axes = self.figure.subplots(2, sharex=True)
+
+    def _plot(self):
+        self._plot_ensembles(self._compute_mask())
+
+    def _compute_mask(self):
+        return (pl.col("harmonic_number") % 2 == 0) & (pl.col("nondim2") < 1e-16)
+
+    def _plot_ensembles(self, rough_mask):
+        palette = sns.color_palette("mako_r", len(self.data.harmonics))
+        lineplot_kwds = dict(
+            alpha=0.85,
+            hue="harmonic_number",
+            hue_order=self.data.harmonics,
+            palette=palette,
+        )
+
+        for results in (
+            self.data.ensemble.filter(~rough_mask),
+            self.data.ensemble.filter(rough_mask),
+        ):
+            ax = self.axes[0]
+            sns.lineplot(
+                results,
+                x="nondim",
+                y="normalised_dis_length",
+                ax=ax,
+                legend=False,
+                **lineplot_kwds,
+            )
+
+            ax = self.axes[1]
+            sns.lineplot(
+                results,
+                x="nondim",
+                y="nondim2",
+                ax=ax,
+                **lineplot_kwds,
+            )
+
+    def _plot_accessories(self):
+        pass
+
+    def _label(self):
+        ax = self.axes[0]
+        ax.set_ylabel(r"$\frac{L_{\kappa}}{\sqrt{2} L_D}$")
+        ax = self.axes[1]
+        ax.set_xlabel("$k L_D$")
+        ax.set_ylabel(r"${\kappa_{\text{cr}}}^2 h L_{\kappa}$")
+
+    def _finalise(self):
+        number_of_harmonics = len(self.data.harmonics)
+        ax = self.axes[-1]
+        ax.set_xscale("log")
+        ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
+        ax.get_legend().set_visible(False)
+        ax.set_xlim(1e-1, 2.5)
+
+        self.figure.tight_layout()
+        _bbox = (
+            self.axes[0]
+            .get_window_extent()
+            .transformed(self.figure.transFigure.inverted())
+        )
+        handles, labels = ax.get_legend_handles_labels()
+        handles, labels = handles[:number_of_harmonics], labels[:number_of_harmonics]
+        labels = [f"$n={{{_l}}}$" for _l in labels]
+        self.figure.legend(
+            handles=handles,
+            labels=labels,
+            ncols=4,
+            handlelength=0.75,
+            loc="upper center",
+            fontsize="small",
+            bbox_to_anchor=((_bbox.x0 + _bbox.x1) / 2, 1.05),
+            handletextpad=0.33,
+            columnspacing=1.0,
+        )
