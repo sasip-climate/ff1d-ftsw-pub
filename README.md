@@ -8,6 +8,7 @@
 ## Table of Contents
 
 - [Installation](#installation)
+- [Usage](#usage)
 - [Licence](#licence)
 
 ## Installation
@@ -15,6 +16,29 @@
 ```console
 pip install ff1d-ftsw-pub
 ```
+
+### From the repository
+
+```console
+git clone git@github.com:sasip-climate/ff1d-ftsw-pub.git
+```
+
+We recommend creating a dedicated virtual environment before installing the
+package:
+```console
+cd ff1d-ftsw-pub
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install .
+```
+
+## Usage
+
+Figure n can be produced with
+```console
+ftsw-gen n
+```
+
 
 ## Licence
 
