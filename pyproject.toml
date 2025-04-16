@@ -19,13 +19,13 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "attrs",
-    "cmocean",
-    "numpy",
-    "matplotlib",
-    "polars",
-    "seaborn",
-    "types-seaborn",
+    "attrs>=25.3",
+    "cmocean>=4.0",
+    "numpy>=2.2",
+    "matplotlib>=3.10",
+    "polars>=1.26",
+    "seaborn>=0.13",
+    "types-seaborn",    # should be made optional
 ]
 
 [project.scripts]
